@@ -1,5 +1,13 @@
 # Guía de desarrollo — Bodegix POS
 
+## Desarrollo de formularios de catálogo
+
+Usa `src/shared/ui/forms` como única infraestructura de TanStack Form. Un formulario
+nuevo debe declarar `formOptions`, valores editables independientes del dominio,
+esquema Zod y mapeadores puros. No accedas a tablas Dexie desde componentes ni rutas.
+Consulta `docs/forms/form-composition.md` y `docs/ui/overlay-strategy.md` antes de
+ampliar el catálogo.
+
 ## Requisitos
 
 - Node.js ≥ 22

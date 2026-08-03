@@ -1,5 +1,15 @@
 # Convenciones de Bodegix POS
 
+## Formularios, dinero y catálogo
+
+- Los valores monetarios permanecen como `string` mientras se editan y se convierten
+  exactamente a céntimos en el mapper; está prohibido `parseFloat(value) * 100`.
+- Los campos compartidos usan `useFieldContext<T>()`; los módulos consumen `AppField`
+  y los componentes registrados viven dentro de `AppForm`.
+- Los errores de catálogo se discriminan por `CatalogErrorCode`, nunca por texto.
+- Los filtros y overlays de `/products` se representan en search params validados.
+- Stock, `createdAt` y relaciones históricas no se sobrescriben desde formularios.
+
 ## Nombres de archivos
 
 | Tipo | Convención | Ejemplo |

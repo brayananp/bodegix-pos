@@ -1,5 +1,13 @@
 # 13. Especificación UI/UX
 
+## Catálogo contextual
+
+`/products` mantiene lista y filtros debajo de las superficies secundarias. Producto
+usa un `Sheet` derecho de 640 px en escritorio y ancho/alto completo en móvil, con
+encabezado y pie fijos y cuerpo desplazable. Categoría usa `Dialog` en escritorio y
+`Drawer` en móvil. Desactivación y descarte usan `AlertDialog`. No se anidan formularios
+ni se abren Dialog/Drawer de edición encima de otro overlay.
+
 ## Principios
 
 - Diseño mobile-first.
@@ -256,98 +264,27 @@ Luego: `.\node_modules\.bin\shadcn.CMD add @example/nombre-del-block`.
 
 ---
 
-### TanStack Form + shadcn Field (composition pattern)
+### TanStack Form + shadcn Field (composición oficial)
 
-> **Regla del proyecto**: **No** usar `@tanstack/zod-form-adapter` (deprecado).
-> Integrar Zod manualmente dentro de `validators.onChange` / `validators.onSubmit`.
-
-Referencia rápida: <https://tanstack.com/form/latest/docs/framework/react/quick-start>
-
-#### Patrón estándar — Campo simple
+La aplicación define una sola infraestructura con `createFormHookContexts` y
+`createFormHook`. Los módulos usan `useAppForm`, `formOptions`, `form.AppField` y
+`form.AppForm`; los campos registrados encapsulan shadcn `Field`, eventos y errores.
+Zod se pasa directamente como Standard Schema en blur/submit.
 
 ```tsx
-import { useForm } from "@tanstack/react-form";
-import { z } from "zod";
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "#/shared/components/ui/field";
-import { Input } from "#/shared/components/ui/input";
+const form = useAppForm({ ...productFormOptions, onSubmit });
 
-const schema = z.object({
-  name: z.string().min(3).max(120),
-});
-
-type FormShape = z.infer<typeof schema>;
-
-function Demo() {
-  const form = useForm<FormShape>({
-    defaultValues: { name: "" },
-    validators: {
-      onChange: ({ value }) => {
-        const res = schema.safeParse(value);
-        if (res.success) return undefined;
-        const fields: Partial<Record<keyof FormShape, string[]>> = {};
-        for (const issue of res.error.issues) {
-          const key = issue.path[0] as keyof FormShape | undefined;
-          if (key) (fields[key] ??= []).push(issue.message);
-        }
-        return { fields };
-      },
-    },
-    onSubmit: ({ value }) => {
-      // …
-    },
-  });
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        void form.handleSubmit();
-      }}
-    >
-      <FieldGroup>
-        <form.Field
-          name="name"
-          children={(field) => (
-            <Field data-invalid={field.state.meta.errors.length > 0}>
-              <FieldLabel htmlFor={field.name}>Nombre</FieldLabel>
-              <Input
-                id={field.name}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                aria-invalid={field.state.meta.errors.length > 0 || undefined}
-              />
-              <FieldDescription>Ayuda visible.</FieldDescription>
-              <FieldError
-                errors={field.state.meta.errors.map((m) => ({ message: m }))}
-              />
-            </Field>
-          )}
-        />
-      </FieldGroup>
-    </form>
-  );
-}
+<form.AppForm>
+  <form.AppField name="name" validators={{ onBlur: productFormSchema.shape.name }}>
+    {(field) => <field.TextField label="Nombre" autoComplete="off" />}
+  </form.AppField>
+  <form.FormActions onCancel={onCancel} submitLabel="Crear producto" />
+</form.AppForm>;
 ```
 
-#### Convenciones
-
-| Aspecto              | Implementación                                                                |
-| -------------------- | ----------------------------------------------------------------------------- |
-| Agrupación           | `FieldGroup` envolviendo todos los campos.                                    |
-| Campo individual     | `<form.Field name=…>` renderizando dentro `<Field data-invalid=…>`.          |
-| Estado inválido      | `data-invalid` en `<Field>`, `aria-invalid` en el control (Input/Select/etc). |
-| Mensaje de error     | `<FieldError errors={[ { message } ]} />` mapeado desde `field.state.meta.errors`. |
-| Submit protegido     | `<form.Subscribe selector={s => [s.canSubmit, s.isSubmitting]} />`.          |
-| Switch / Radio / Checkbox | `<Field orientation="horizontal">` + `<FieldTitle>` + `<FieldContent>`. |
-| Layout 2 col tablet  | `<div className="grid grid-cols-1 gap-7 md:grid-cols-2">` anidando `<form.Field>`. |
+`ProductFormFields` usa `withForm` para separar únicamente la composición. Los valores
+del formulario no son entidades de dominio; dinero y enteros permanecen como strings
+hasta los mapeadores. Consulta `docs/forms/form-composition.md` para las reglas completas.
 
 ---
 
@@ -361,5 +298,5 @@ Montados en `src/routes/__root.tsx`:
 
 Usar `toast.success / toast.error / toast.info / toast.warning` para feedback en acciones (guardar, eliminar, cobrar, etc.).
 
-Ejemplo práctico en `src/routes/index.tsx`: formulario completo de *Nuevo Producto* que combina `Card`, `Field*`, `Input`, `Select`, `Switch`, `Textarea`, validación Zod con `validators.onChange` + `onSubmit`, confirmación por `toast.success`, y reset del formulario. Sirve como referencia para el resto del MVP.
-
+La referencia práctica vigente es `src/modules/catalog/ui/forms`: composición común,
+validación Zod por blur/submit, feedback con Sonner y reset tras persistencia exitosa.

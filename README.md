@@ -1,5 +1,12 @@
 # Bodegix POS
 
+## Estado: Fase 2
+
+El catálogo local-first ya permite crear, consultar, editar, buscar, filtrar, paginar,
+desactivar y reactivar productos y categorías desde `/products`. Los formularios usan
+composición oficial de TanStack Form y la persistencia reactiva se apoya en Dexie e
+IndexedDB. El stock se muestra en solo lectura; sus movimientos pertenecen a la Fase 3.
+
 **PWA offline-first de ventas, caja e inventario para bodegas.**
 
 [![CI](https://github.com/bodegix/bodegix-pos/actions/workflows/ci.yml/badge.svg)](https://github.com/bodegix/bodegix-pos/actions/workflows/ci.yml)

@@ -1,5 +1,13 @@
 # 08. Arquitectura de la aplicación
 
+## Comandos y consultas del catálogo
+
+Comandos: `createCategory`, `updateCategory`, `setCategoryActiveState`,
+`createProduct`, `updateProduct` y `setProductActiveState`. Consultas:
+`getCategoryById`, `listCategories`, `getProductById` y `searchProducts`.
+`CatalogStore` expresa estas capacidades concretas; `CatalogQueries` separa lecturas.
+El adaptador Dexie ejecuta invariantes sensibles a concurrencia dentro de transacciones.
+
 ## Infraestructura local implementada en Fase 1
 
 `shared/infrastructure/local-db` contiene registros de persistencia, versiones Dexie, bootstrap,

@@ -1,5 +1,12 @@
 # Estrategia de pruebas — Bodegix POS
 
+## Cobertura de catálogo
+
+La Fase 2 añade pruebas de mapeadores y campos compuestos, search params seguros,
+reglas arquitectónicas, transacciones Dexie y el flujo E2E completo en Chromium de
+escritorio y móvil. El E2E cubre categoría, producto, detalle, edición, persistencia,
+búsquedas, estado lógico, descarte de cambios y botón atrás.
+
 ## Tipos de pruebas
 
 ### 1. Unitarias (Vitest)

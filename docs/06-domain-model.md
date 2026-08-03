@@ -1,5 +1,13 @@
 # 06. Modelo de dominio
 
+## Catalog
+
+`Category` contiene identidad, nombre original/normalizado, estado y timestamps.
+`Product` contiene identidad, nombre original/normalizado, código opcional, relación
+opcional a categoría, precios enteros en céntimos, stock actual, stock mínimo, estado y
+timestamps. `CatalogError` transporta un `CatalogErrorCode` estable para que aplicación
+y UI colaboren sin acoplarse a mensajes.
+
 ## Módulos de dominio y agregados reales
 
 El modelo se organiza por módulos funcionales, no por una sola capa global. No todas las tablas Dexie son agregados. Un agregado solo existe cuando hay un conjunto de entidades + invariantes que deben ser consistentes transaccionalmente.

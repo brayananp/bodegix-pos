@@ -1,5 +1,11 @@
 # 16. Definition of Done
 
+## Fase 2
+
+La fase exige las seis validaciones del proyecto en verde, CRUD lógico de catálogo,
+stock inmutable, composición `createFormHook`, URL validada, overlays responsive,
+errores tipados, bloqueo de cambios, E2E escritorio/móvil y documentación sincronizada.
+
 ## Para una historia
 
 Una historia está terminada cuando:

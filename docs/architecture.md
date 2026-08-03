@@ -1,5 +1,13 @@
 # Arquitectura de Bodegix POS
 
+## Slice de catálogo (Fase 2)
+
+`modules/catalog` aplica dominio puro → casos de uso/puertos → adaptador Dexie → UI.
+Los comandos son explícitos, no un repositorio CRUD genérico. Las consultas reactivas
+entran a React exclusivamente mediante hooks con `useLiveQuery`; las rutas solo validan
+search params y montan la página pública del módulo. Las escrituras transaccionales
+revalidan unicidad, categoría activa y conservación del stock.
+
 ## Nombre oficial
 
 **Monolito modular local-first con vertical slices, puertos y adaptadores selectivos, y separación ligera de comandos y consultas.**

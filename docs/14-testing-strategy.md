@@ -1,5 +1,13 @@
 # 14. Estrategia de pruebas
 
+## Pirámide de catálogo
+
+Las unidades cubren conversión exacta, mapeadores, Zod y campos pre-vinculados. La
+integración usa `fake-indexeddb` para transacciones, duplicados, filtros, cambios de
+estado, persistencia y stock inmutable. Las pruebas arquitectónicas impiden dependencias
+de UI/Dexie en dominio/aplicación. Playwright valida overlays y navegación en los dos
+viewports configurados.
+
 ## Cobertura de infraestructura local (Fase 1)
 
 Vitest usa `fake-indexeddb` para probar el esquema Dexie sin tocar la base de producción. Las bases

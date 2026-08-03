@@ -1,5 +1,14 @@
 # 04. Requisitos funcionales
 
+## RF-CAT — Catálogo (implementado en Fase 2)
+
+- RF-CAT-01: administrar categorías mediante creación, edición y cambio lógico de estado.
+- RF-CAT-02: administrar productos mediante creación, detalle, edición y cambio lógico de estado.
+- RF-CAT-03: buscar por nombre o código y filtrar por categoría/estado.
+- RF-CAT-04: ordenar y paginar sin perder el contexto de navegación.
+- RF-CAT-05: restaurar filtros y panel contextual desde la URL.
+- RF-CAT-06: mostrar stock y stock mínimo sin permitir movimientos o edición de stock.
+
 ## Convenciones
 
 - Prioridad `MUST`: obligatoria para el MVP.

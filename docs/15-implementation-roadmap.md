@@ -1,5 +1,14 @@
 # 15. Hoja de ruta de implementación
 
+## Fase 2 — completada
+
+Catálogo de productos/categorías, composición compartida de formularios, persistencia
+Dexie reactiva, búsqueda/filtros/paginación, paneles contextuales y protección de cambios.
+
+## Próxima fase
+
+Fase 3 — Inventario y movimientos de stock.
+
 ## Principio de ejecución
 
 1. **Vertical primero, luego horizontal**: no terminamos "todo el shared" primero, sino que hacemos end-to-end una capacidad pequeña en cada fase y la testeamos.

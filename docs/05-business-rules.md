@@ -1,5 +1,15 @@
 # 05. Reglas de negocio
 
+## Catálogo
+
+- Categorías: nombre normalizado único, 2–60 caracteres y desactivación lógica.
+- Productos: nombre de 2–120 caracteres, precio positivo en céntimos, costo opcional
+  no negativo y stock mínimo entero no negativo.
+- El código conserva ceros iniciales y es único entre productos activos.
+- Una asignación nueva solo acepta categorías activas; relaciones existentes se conservan.
+- Crear fija stock en `0`; editar o cambiar estado conserva stock y `createdAt`.
+- Ninguna operación de catálogo elimina registros físicamente.
+
 ## Dinero
 
 ### BR-MON-001
