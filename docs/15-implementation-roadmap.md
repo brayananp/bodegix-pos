@@ -5,9 +5,14 @@
 Catálogo de productos/categorías, composición compartida de formularios, persistencia
 Dexie reactiva, búsqueda/filtros/paginación, paneles contextuales y protección de cambios.
 
+## Fase 3 — completada
+
+Inventario híbrido, cuatro operaciones manuales, unidad de trabajo atómica, consultas paginadas,
+Sheet contextual, diagnóstico, migración v2 y pruebas desktop/móvil.
+
 ## Próxima fase
 
-Fase 3 — Inventario y movimientos de stock.
+Fase 4 — Caja, apertura y movimientos de efectivo.
 
 ## Principio de ejecución
 
@@ -82,13 +87,13 @@ Tareas:
 **Módulo**: `inventory` + frontera con `catalog`
 
 Tareas:
-- [ ] Dominio: `InventoryMovement` tipos `initial_stock`, `purchase`, `adjustment_in/out`, `damaged`, `expired`
-- [ ] Casos de uso: `registerInitialStock`, `registerStockEntry`, `registerInventoryAdjustment`
-- [ ] **1 transacción Dexie por operación** (actualiza `Product.stockQuantity` + inserta `InventoryMovement` con before/after)
-- [ ] Consultas: `getProductMovementHistory`, `getLowStockProducts`
-- [ ] Pantalla `/inventory`: stock bajo, historial movimientos, ajustes manuales
-- [ ] Tests: transaccionalidad (si falla inserción movimiento, no cambia stock), integridad after/before
-- [ ] Aplica ADR-0005, ADR-0015
+- [x] Dominio: `InventoryMovement`, transición pura, estados y errores tipados
+- [x] Casos de uso: stock inicial, entrada, conciliación y pérdida
+- [x] **1 transacción Dexie por operación** para saldo + movimiento
+- [x] Consultas: inventario, resumen, detalle e historiales paginados
+- [x] Pantalla `/inventory`: filtros, estados, historial y Sheet de operaciones
+- [x] Tests: atomicidad, rollback, concurrencia, integridad, UI y E2E
+- [x] ADR-0015 y documentación sincronizados
 
 ---
 

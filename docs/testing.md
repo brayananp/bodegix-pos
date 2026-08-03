@@ -1,5 +1,16 @@
 # Estrategia de pruebas — Bodegix POS
 
+## Cobertura de inventario
+
+La Fase 3 prueba la transición pura y los estados de stock, mapeadores y search params, componentes
+accesibles, unidad de trabajo real con `fake-indexeddb`, rollback por fallo de inserción,
+serialización de entradas concurrentes, migración v1→v2 y diagnóstico de inconsistencias. Las
+reglas arquitectónicas protegen propiedad de stock, capas y ciclos entre módulos.
+
+`e2e/inventory.spec.ts` ejecuta en Chromium desktop y móvil el flujo stock inicial → entrada →
+conteo → pérdida, recarga, historial, filtro, búsqueda, navegación atrás, descarte de cambios y
+clasificación bajo/agotado.
+
 ## Cobertura de catálogo
 
 La Fase 2 añade pruebas de mapeadores y campos compuestos, search params seguros,

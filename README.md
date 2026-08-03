@@ -1,11 +1,10 @@
 # Bodegix POS
 
-## Estado: Fase 2
+## Estado: Fase 3
 
-El catálogo local-first ya permite crear, consultar, editar, buscar, filtrar, paginar,
-desactivar y reactivar productos y categorías desde `/products`. Los formularios usan
-composición oficial de TanStack Form y la persistencia reactiva se apoya en Dexie e
-IndexedDB. El stock se muestra en solo lectura; sus movimientos pertenecen a la Fase 3.
+El catálogo local-first está operativo y `/inventory` permite consultar existencias, registrar
+stock inicial, entradas, conciliaciones y pérdidas, además de revisar el historial inmutable. Las
+escrituras de stock y movimiento son atómicas; los saldos son enteros y nunca negativos.
 
 **PWA offline-first de ventas, caja e inventario para bodegas.**
 
@@ -40,7 +39,7 @@ La Fase 1 conserva la fundación técnica e incorpora:
 - StorageManager y panel técnico en Configuración
 - Pruebas reales con `fake-indexeddb`
 
-**Siguiente fase:** Fase 2 — Catálogo de productos y categorías
+**Siguiente fase:** Fase 4 — Caja, apertura y movimientos de efectivo
 
 ## Stack tecnológico
 
@@ -132,9 +131,9 @@ bodegix-pos/
 └── vite.config.ts       TanStack Start + Tailwind
 ```
 
-## Alcance de la Fase 1
+## Alcance implementado hasta la Fase 3
 
-La Fase 1 **contiene:**
+El proyecto **contiene:**
 - Base técnica y configuración completa
 - Layout responsive mobile-first
 - Rutas tipadas con navegación funcional
@@ -144,9 +143,13 @@ La Fase 1 **contiene:**
 - CI/CD en GitHub Actions
 - Esquema local v1, bootstrap, persistencia, cuota y diagnóstico
 - Provider cliente con estados de inicialización, error y reintento
+- Catálogo completo de productos y categorías con desactivación lógica
+- Inventario híbrido: saldo materializado más ledger inmutable
+- Operaciones manuales de stock dentro de una unidad de trabajo Dexie
+- Resumen, filtros, historial global y por producto con consultas reactivas
+- Diagnóstico profundo de integridad del ledger y migración de esquema v1 a v2
 
-La Fase 1 **no contiene todavía:**
-- Formularios de productos
+Todavía **no contiene:**
 - Carrito de compras
 - Pagos
 - Apertura/cierre de caja
@@ -158,10 +161,10 @@ La Fase 1 **no contiene todavía:**
 | Fase | Descripción |
 |---|---|
 | **Fase 1** | Infraestructura local con Dexie e IndexedDB ✅ |
-| Fase 2 | Catálogo de productos y categorías |
-| Fase 3 | Módulo sales + carrito + cobro |
-| Fase 4 | Módulo cash + apertura/cierre |
-| Fase 5 | Módulo inventory + movimientos |
+| **Fase 2** | Catálogo de productos y categorías ✅ |
+| **Fase 3** | Inventario y movimientos de stock ✅ |
+| Fase 4 | Caja, apertura y movimientos de efectivo |
+| Fase 5 | Ventas, carrito y pagos |
 | Fase 6 | Módulo reporting + resumen diario |
 | Fase 7 | Módulo backup + exportación |
 | Fase 8 | Módulo settings + configuración |
@@ -177,4 +180,8 @@ La Fase 1 **no contiene todavía:**
 - [Esquema v1](docs/database-schema-v1.md)
 - [Migraciones](docs/database-migrations.md)
 - [Persistencia de almacenamiento](docs/storage-persistence.md)
+- [Módulo de inventario](docs/modules/inventory.md)
+- [Casos de uso de inventario](docs/use-cases/inventory-use-cases.md)
+- [Interfaz de inventario](docs/ui/inventory-ui.md)
+- [Integridad de inventario](docs/database/inventory-integrity.md)
 - [ADRs](docs/adr/)

@@ -67,27 +67,39 @@ Cada movimiento registra cantidad delta, stock anterior y stock posterior.
 
 ### BR-INV-003
 
-Una venta crea un movimiento negativo por cada ítem.
+El stock inicial solo se registra una vez, desde saldo cero, antes de cualquier movimiento y con
+cantidad positiva.
 
 ### BR-INV-004
 
-Una anulación crea movimientos inversos positivos.
+Una entrada manual crea un movimiento `purchase`; no crea una orden de compra ni un proveedor.
 
 ### BR-INV-005
 
-Una venta no puede dejar stock negativo.
+Una conciliación recibe la cantidad contada. Si difiere, deriva `adjustment_in` o
+`adjustment_out`; si coincide, devuelve `NO_STOCK_CHANGE` y no persiste.
 
 ### BR-INV-006
 
-Un ajuste administrativo puede producir stock negativo, pero debe advertirse y exigir motivo.
+Ninguna operación del MVP puede producir stock negativo. Las pérdidas no pueden superar el saldo
+actual y todas las cantidades son enteras.
 
 ### BR-INV-007
 
 Un producto se considera con stock bajo cuando:
 
 ```text
-stockQuantity <= minimumStockQuantity
+stockQuantity > 0
+&& minimumStockQuantity > 0
+&& stockQuantity <= minimumStockQuantity
 ```
+
+`stockQuantity === 0` significa agotado y no se clasifica simultáneamente como stock bajo.
+
+### BR-INV-008
+
+Todo saldo y su movimiento se persisten dentro de una única transacción. Los movimientos
+confirmados no se editan ni se eliminan; una corrección agrega otro movimiento.
 
 ## Ventas
 

@@ -37,10 +37,14 @@
 | FR-INV-003 | Registrar ajustes positivos y negativos. | MUST |
 | FR-INV-004 | Guardar stock anterior y posterior. | MUST |
 | FR-INV-005 | Mostrar historial por producto. | MUST |
-| FR-INV-006 | Mostrar stock bajo cuando `stock <= minimumStock`. | MUST |
-| FR-INV-007 | Impedir stock negativo al vender. | MUST |
-| FR-INV-008 | Permitir stock negativo mediante ajuste administrativo. | MUST |
-| FR-INV-009 | Exigir motivo para ajustes manuales. | MUST |
+| FR-INV-006 | Distinguir agotado (`stock = 0`), bajo (`0 < stock <= minimumStock`) y con stock. | MUST |
+| FR-INV-007 | Impedir stock negativo en toda operación. | MUST |
+| FR-INV-008 | Conciliar mediante cantidad contada y derivar automáticamente el delta. | MUST |
+| FR-INV-009 | Exigir motivo para conciliaciones y para pérdidas de tipo otra. | MUST |
+| FR-INV-010 | Registrar pérdidas por daño, vencimiento u otra causa. | MUST |
+| FR-INV-011 | Mantener saldo y movimiento consistentes en una transacción atómica. | MUST |
+| FR-INV-012 | Buscar/filtrar inventario y paginar el historial global o por producto. | MUST |
+| FR-INV-013 | Conservar movimientos inmutables sin edición ni eliminación. | MUST |
 
 ## Ventas
 

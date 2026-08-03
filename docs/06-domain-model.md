@@ -1,5 +1,16 @@
 # 06. Modelo de dominio
 
+## Inventory (implementado en Fase 3)
+
+`InventoryOperation` expresa stock inicial, entrada, conteo y pérdida. La función pura
+`calculateInventoryTransition(currentStock, operation)` valida cantidades enteras, deriva tipo,
+delta y saldos, e impide negativos. `InventoryError` aporta códigos estables.
+
+La lectura no duplica `Product`: usa `InventoryProduct`, una proyección con identidad, nombre,
+categoría, saldo/mínimo, estado de stock, actividad, existencia de movimientos y fecha del último.
+`InventoryStockStatus` solo puede ser `in_stock`, `low_stock` u `out_of_stock`; actividad es otra
+dimensión.
+
 ## Catalog
 
 `Category` contiene identidad, nombre original/normalizado, estado y timestamps.

@@ -9,8 +9,10 @@
 5. Toda migración incluye pruebas desde una fixture de la versión anterior y prueba de reapertura.
 6. No se usa modo dinámico, no se borra la base al fallar y `delete()` no es recuperación normal.
 
-La Fase 1 solo tiene instalaciones nuevas v1; no existe un `upgrade()` ficticio desde una versión
-anterior.
+La v1 es la primera versión publicada. La v2 de Fase 3 conserva todas las tablas/registros y añade
+dos índices compuestos a `inventoryMovements`; Dexie reconstruye índices al abrir sin necesitar un
+callback `upgrade()`. La prueba crea una base v1 real, inserta datos y la abre con la clase v2 para
+comprobar conservación e índices.
 
 ## Procedimiento futuro
 

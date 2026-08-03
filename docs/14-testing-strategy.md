@@ -1,5 +1,14 @@
 # 14. Estrategia de pruebas
 
+## Pirámide de inventario (Fase 3)
+
+- Dominio: transición exhaustiva, enteros, negativos, deltas y estados.
+- Integración: comandos contra Dexie real simulado, consultas/índices, rollback y concurrencia.
+- Persistencia: migración v1→v2 e integridad del ledger sin reparación automática.
+- Componentes: estado textual, métricas, vistas previas y campos compartidos.
+- Arquitectura: pureza de capas, propiedad del stock, módulos sin ciclos y rutas delgadas.
+- E2E: dos escenarios en desktop/móvil, incluidos historial, URL, navegación y dirty state.
+
 ## Pirámide de catálogo
 
 Las unidades cubren conversión exacta, mapeadores, Zod y campos pre-vinculados. La

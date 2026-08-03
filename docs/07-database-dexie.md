@@ -1,8 +1,19 @@
 # 07. Diseño de base de datos Dexie
 
-> Implementación vigente de Fase 1: [database-schema-v1.md](./database-schema-v1.md). Ante una
-> diferencia con ejemplos históricos de este documento, el archivo de esquema v1 y esa referencia
-> son autoritativos.
+> Implementación vigente: esquema v2. `schema-v1.ts` permanece inmutable y `schema-v2.ts` añade
+> índices compuestos de historial sin transformar registros.
+
+## Esquema v2 de inventario
+
+Además de `[productId+createdAt]` y `[referenceType+referenceId]`, la versión 2 incorpora
+`[type+createdAt]` y `[productId+type+createdAt]`. Permiten paginar el historial global o por
+producto con filtro de tipo sin cargar el ledger completo. La migración v1→v2 conserva datos y se
+prueba abriendo una base creada con `registerSchemaV1` desde la clase actual.
+
+La unidad de trabajo de inventario abre `rw` sobre `products` e `inventoryMovements`, relee el
+producto, toma el último movimiento, calcula la transición, asigna un timestamp estrictamente
+creciente por producto y escribe saldo/movimiento. IndexedDB serializa las transacciones de
+escritura solapadas; un fallo en cualquier inserción revierte también el update del producto.
 
 ## Propósito y frontera
 

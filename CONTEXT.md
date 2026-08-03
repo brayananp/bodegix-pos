@@ -1,7 +1,7 @@
 # Contexto de Bodegix POS
 
 > Documento vivo de incorporación, relevo y contexto para personas y agentes de desarrollo.
-> Última actualización: 2026-08-03. Estado cubierto: Fases 1 y 2 completadas; Fase 3 aún no iniciada.
+> Última actualización: 2026-08-03. Estado cubierto: Fases 1, 2 y 3 completadas.
 
 ## Cómo usar este documento
 
@@ -25,9 +25,9 @@ representa una bodega y una caja operativa; el MVP no tiene cuentas, roles, sinc
 servidor de negocio.
 
 La aplicación actual es una SPA de TanStack Start. Los datos se almacenan localmente en
-IndexedDB mediante Dexie. La Fase 1 dejó lista la infraestructura local y la Fase 2 implementó
-el catálogo funcional de productos y categorías. La siguiente fase acordada es inventario y
-movimientos de stock.
+IndexedDB mediante Dexie. La Fase 1 dejó lista la infraestructura, la Fase 2 implementó el
+catálogo y la Fase 3 implementó inventario con saldo materializado, ledger inmutable, operaciones
+atómicas, consultas reactivas, diagnóstico y UI responsive.
 
 ## Estado actual
 
@@ -56,13 +56,30 @@ En `/products` se puede:
 No existe eliminación física de productos o categorías. El stock es visible pero no editable
 desde catálogo.
 
+### Fase 3 — Inventario: completada
+
+En `/inventory` se puede:
+
+- consultar, buscar, filtrar, ordenar y paginar existencias;
+- diferenciar con stock, stock bajo y agotados;
+- registrar stock inicial una sola vez;
+- registrar entradas manuales;
+- conciliar el saldo mediante cantidad contada;
+- registrar pérdidas dañadas, vencidas u otras;
+- consultar historial global y por producto;
+- restaurar filtros y panel desde la URL.
+
+Cada cambio actualiza `Product.stockQuantity` e inserta un `InventoryMovement` dentro de una sola
+transacción. Las cantidades son enteras, el saldo no puede ser negativo y los movimientos no se
+editan ni eliminan.
+
 ### Estado de los demás módulos
 
 | Módulo | Estado funcional |
 |---|---|
 | `catalog` | Implementado en Fase 2. |
 | `settings` | Infraestructura y diagnóstico local de Fase 1. No es configuración completa. |
-| `inventory` | Solo límite y registros persistentes preparados. Sin casos de uso ni UI funcional. |
+| `inventory` | Implementado en Fase 3. |
 | `sales` | Solo límite del módulo y tablas preparadas. Sin carrito ni ventas. |
 | `cash` | Solo límite del módulo y tablas preparadas. Sin apertura o cierre funcional. |
 | `reporting` | Solo límite del módulo. Sin consultas de negocio reales. |
@@ -164,9 +181,9 @@ compatibilidad, pero no es el recomendado.
 
 - Nombre de la base: `bodegix-pos`.
 - Motor: Dexie 4 sobre IndexedDB.
-- Versión actual: `1`.
-- La versión 1 publicada es inmutable; cualquier cambio estructural futuro requiere una nueva
-  versión y una migración probada.
+- Versión actual: `2`.
+- La versión 1 publicada es inmutable. La v2 añade índices compuestos del historial y su migración
+  está probada; cada cambio futuro requiere otra versión.
 - La base se crea y abre únicamente en el navegador mediante `getLocalDatabase()`.
 - Importar módulos durante SSR o generación del shell no abre IndexedDB.
 - Los valores ausentes se persisten como `null`, no como `undefined`.
@@ -174,13 +191,13 @@ compatibilidad, pero no es el recomendado.
 - Los timestamps se persisten como epoch milliseconds UTC.
 - Los IDs se generan con `crypto.randomUUID()`.
 
-### Tablas del esquema v1
+### Tablas del esquema v2
 
 | Tabla | Propietario | Uso actual |
 |---|---|---|
 | `categories` | catalog | Funcional. |
 | `products` | catalog | Funcional; contiene el stock materializado. |
-| `inventoryMovements` | inventory | Preparada, todavía sin flujo funcional. |
+| `inventoryMovements` | inventory | Funcional; ledger append-only de inventario. |
 | `sales` | sales | Preparada, todavía sin flujo funcional. |
 | `saleItems` | sales | Preparada, todavía sin flujo funcional. |
 | `salePayments` | sales | Preparada, todavía sin flujo funcional. |
@@ -296,6 +313,7 @@ Campos registrados:
 - `IntegerField`;
 - `BarcodeField`;
 - `SelectField`;
+- `TextareaField`;
 - `FieldErrorInfo`.
 
 Componentes registrados:
@@ -350,6 +368,50 @@ Los formularios bloquean navegación, atrás y `beforeunload` cuando
 Una ruta independiente `/products/:productId` solo será apropiada cuando el producto acumule
 varias áreas propias, como general, inventario, ventas, compras, proveedores y auditoría.
 
+## Inventario implementado
+
+El modelo es híbrido y no es event sourcing:
+
+```text
+Product.stockQuantity      saldo actual para consultas
+InventoryMovement[]        historial auditable append-only
+```
+
+Comandos públicos:
+
+- `initializeProductStock`: activo, saldo cero, ledger vacío y cantidad positiva;
+- `registerStockEntry`: activo, cantidad positiva, referencia/nota opcionales;
+- `reconcileProductStock`: activo o inactivo, cantidad contada no negativa y motivo obligatorio;
+- `registerStockLoss`: activo o inactivo, cantidad disponible y motivo obligatorio para `other`.
+
+La transición pura deriva tipo, delta, `stockBefore` y `stockAfter`. Un conteo igual al saldo
+devuelve `NO_STOCK_CHANGE` sin escribir. Pérdidas mapean `damaged`, `expired` u
+`adjustment_out`. Los tipos `sale` y `sale_void` solo están reservados en persistencia.
+
+Estados:
+
+- `out_of_stock`: saldo cero;
+- `low_stock`: saldo positivo, mínimo positivo y saldo menor o igual al mínimo;
+- `in_stock`: los demás saldos positivos.
+
+`DexieInventoryUnitOfWork` usa `products` e `inventoryMovements`, relee dentro de `rw`, fuerza
+orden temporal monotónico por producto y deja que cualquier error produzca rollback. La escritura
+concurrente se serializa sin updates perdidos. `Product.updatedAt` significa cualquier cambio
+persistido, incluido el stock.
+
+`InventoryQueries` ofrece listado, detalle, resumen, movimiento individual e historiales global y
+por producto. Resuelve categorías/productos en lote y usa índices compuestos v2 para filtrar
+movimientos. Hooks React observan esas lecturas con `useLiveQuery`; no existe TanStack Query.
+
+El diagnóstico profundo `inventory-ledger-integrity` detecta huérfanos, enteros/signos inválidos,
+saldos negativos, ecuación rota, iniciales inválidos/duplicados, productos con saldo sin ledger y
+desalineación del último movimiento. Informa IDs y causa, pero nunca repara automáticamente.
+
+`/inventory` usa search params tipados y un solo `InventorySheet` con modos `detail`, `initial`,
+`entry`, `reconcile` y `loss`. Conserva filtros/navegación, restaura tras recarga y reutiliza la
+protección común de cambios sin guardar. En escritorio usa tabla/Sheet lateral; en móvil,
+tarjetas/Sheet de pantalla completa.
+
 ## Stack y herramientas
 
 | Responsabilidad | Tecnología |
@@ -392,17 +454,19 @@ pnpm check:full       # check + E2E
 Antes de editar código relacionado con TanStack, revisar `AGENTS.md` y ejecutar el comando de
 TanStack Intent que coincida con el cambio.
 
-## Calidad verificada al cerrar Fase 2
+## Calidad verificada durante el cierre de Fase 3
 
-Última línea base completa ejecutada antes de este documento:
+Línea base completa ejecutada al cerrar la fase:
 
-- formato: 136 archivos sin diferencias;
-- lint: 136 archivos sin errores;
-- TypeScript: correcto;
-- Vitest: 16 archivos y 144 pruebas aprobadas;
-- build: cliente, SSR y Nitro correctos;
-- Playwright: 34 escenarios aprobados en escritorio y móvil;
-- `pnpm check:full`: correcto.
+- `pnpm format:check`: 178 archivos correctos;
+- `pnpm lint`: 178 archivos sin errores;
+- `pnpm typecheck`: correcto;
+- `pnpm test`: 22 archivos y 200 pruebas aprobadas;
+- `pnpm build`: cliente, SSR y Nitro correctos;
+- `pnpm test:e2e`: 38 escenarios aprobados en escritorio y móvil.
+
+La suite incluye dominio, consultas, rollback, concurrencia, migración v1→v2, diagnóstico,
+componentes, arquitectura y los recorridos Playwright de inventario.
 
 El build emitió una advertencia no bloqueante porque el chunk principal del cliente ronda 931 kB
 minificado. Es una oportunidad futura de code splitting, no un fallo funcional de Fase 2.
@@ -417,42 +481,28 @@ minificado. Es una oportunidad futura de code splitting, no un fallo funcional d
 - Unitarias junto al archivo; E2E en `e2e/`; arquitectura en `src/test/architecture/`.
 - Una operación crítica que afecta varias tablas usa una única transacción Dexie.
 - No esperar red, temporizadores o UI dentro de una transacción.
-- No modificar el esquema v1; crear una versión nueva si cambia la estructura.
+- No modificar los esquemas v1 o v2; crear una versión nueva si cambia la estructura.
 - No introducir campos especulativos de sincronización.
 - No usar importes de coma flotante ni editar stock silenciosamente.
 - Actualizar documentación y pruebas cuando cambia una invariante.
 
 ## Próxima fase autorizada
 
-### Fase 3 — Inventario y movimientos de stock
+### Fase 4 — Caja, apertura y movimientos de efectivo
 
-Objetivo previsto:
-
-- implementar `InventoryMovement` como ledger de trazabilidad;
-- registrar stock inicial, entradas y ajustes manuales;
-- actualizar `Product.stockQuantity` y crear el movimiento en una sola transacción Dexie;
-- guardar `quantityDelta`, `stockBefore` y `stockAfter`;
-- exigir motivos en ajustes y pérdidas cuando corresponda;
-- consultar historial por producto y productos con stock bajo;
-- construir la UI de `/inventory`;
-- probar rollback completo cuando falle cualquier parte de la transacción.
-
-El esquema v1 ya contiene `inventoryMovements` y los tipos de registro necesarios. Antes de crear
-una migración se debe comprobar si la fase puede implementarse con la estructura existente.
-
-Fase 3 no autoriza implementar ventas, caja, pagos, respaldo, backend o sincronización. Las
-salidas por venta y sus anulaciones están modeladas para el futuro, pero su coordinación debe
-esperar al módulo de ventas.
+No está iniciada. No asumir que los placeholders de `cash` constituyen funcionalidad.
 
 ## Documentación de referencia
 
 - Visión y supuestos: `docs/00-decisions-and-assumptions.md` y `docs/01-product-vision.md`.
 - Alcance del MVP: `docs/02-mvp-scope.md`.
 - Requisitos y reglas: `docs/04-functional-requirements.md` y `docs/05-business-rules.md`.
-- Dominio y persistencia: `docs/06-domain-model.md`, `docs/database-schema-v1.md` y
-  `docs/local-database.md`.
+- Dominio y persistencia: `docs/06-domain-model.md`, `docs/database-schema-v1.md`,
+  `docs/database/inventory-integrity.md` y `docs/local-database.md`.
 - Arquitectura: `docs/architecture.md`, `docs/08-application-architecture.md` y `docs/adr/`.
 - Catálogo: `docs/modules/catalog.md` y `docs/use-cases/catalog-use-cases.md`.
+- Inventario: `docs/modules/inventory.md`, `docs/use-cases/inventory-use-cases.md` y
+  `docs/ui/inventory-ui.md`.
 - Formularios y UX: `docs/forms/form-composition.md`, `docs/ui/catalog-ui.md` y
   `docs/ui/overlay-strategy.md`.
 - Desarrollo y calidad: `docs/development.md`, `docs/conventions.md`, `docs/testing.md` y

@@ -1,5 +1,18 @@
 # Convenciones de Bodegix POS
 
+## Inventario
+
+- Solo `modules/inventory/infrastructure` modifica `Product.stockQuantity` después de la creación.
+- Toda mutación de saldo produce un movimiento en la misma transacción, salvo una conciliación sin
+  diferencia, que falla sin escribir.
+- Cantidades y saldos son enteros seguros no negativos; no se admiten decimales ni stock negativo.
+- Movimientos confirmados son append-only: no existen comandos de edición o eliminación.
+- `Product.updatedAt` cambia con modificaciones de catálogo o inventario.
+- `sale` y `sale_void` son valores reservados; no se generan hasta una fase posterior.
+- Errores se discriminan por `InventoryErrorCode`, nunca comparando mensajes.
+- Search params conservan pestaña, filtros, paginación y modo del Sheet; valores del formulario no
+  se serializan en la URL.
+
 ## Formularios, dinero y catálogo
 
 - Los valores monetarios permanecen como `string` mientras se editan y se convierten

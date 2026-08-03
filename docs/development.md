@@ -1,5 +1,19 @@
 # Guía de desarrollo — Bodegix POS
 
+## Desarrollo de inventario
+
+- Añade una mutación como intención del `InventoryUnitOfWork`, nunca como actualización directa de
+  `products` desde UI, ruta o catálogo.
+- Calcula toda transición en `calculateInventoryTransition`; las reglas dependientes del estado se
+  vuelven a comprobar dentro de la transacción.
+- Incluye siempre `products` e `inventoryMovements` en una escritura de stock y deja que el error
+  aborte la transacción.
+- Usa `InventoryQueries` para lecturas paginadas e índices compuestos para historiales filtrados.
+- Los formularios declaran `formOptions`, Zod, mapeador puro, `withForm`, `AppField`, `AppForm` y el
+  guard compartido de cambios sin guardar.
+- Antes de cambiar TanStack Router/Form o Dexie, carga la guía TanStack Intent indicada por
+  `AGENTS.md` y contrasta la API oficial vigente.
+
 ## Desarrollo de formularios de catálogo
 
 Usa `src/shared/ui/forms` como única infraestructura de TanStack Form. Un formulario

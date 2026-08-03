@@ -1,5 +1,11 @@
 # Base de datos local
 
+## Estado en Fase 3
+
+La versión vigente es 2. Registra v1 y luego v2; ambas definiciones permanecen inmutables. V2
+añade índices compuestos de inventario y no transforma datos. El modo de diagnóstico profundo
+incluye `inventory-ledger-integrity`, que informa inconsistencias de saldo e historial sin reparar.
+
 ## Decisión
 
 Bodegix usa **Dexie 4.4.4** como único adaptador sobre IndexedDB. `dexie-react-hooks

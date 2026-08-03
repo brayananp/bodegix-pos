@@ -1,52 +1,52 @@
-# ADR-0015: Mantener inventario actual más ledger de movimientos
+# ADR-0015: Inventario híbrido, no negativo y transaccional
 
-- Status: Aprobado
-- Date: 2026-08-02
-- Deciders: Arquitectura del producto
-- Depends on: [ADR-0005](file:///c:/Users/ALEXIS/PROYECTOS/productos/bodegix-pos/docs/adr/0005-inventory-ledger.md), [ADR-0013](file:///c:/Users/ALEXIS/PROYECTOS/productos/bodegix-pos/docs/adr/0013-no-event-sourcing.md)
+- Estado: aceptado
+- Fecha: 2026-08-03
+- Depende de: ADR-0002, ADR-0005 y ADR-0013
 
-## Context
+## Contexto
 
-Definir el modelo de inventario en el contexto del monolito modular y clarificar que, a pesar de parecerse, NO es event sourcing.
+El listado de una bodega debe responder con miles de productos, pero cada cambio también debe ser
+auditable. Mantener solo el saldo pierde trazabilidad; reconstruirlo desde todo el ledger encarece
+las lecturas habituales y convierte los movimientos en la única fuente de estado.
 
-Opciones evaluadas:
+Documentación anterior admitía stock negativo para ajustes administrativos. Esa regla contradice
+el alcance operativo del MVP y dificulta distinguir una corrección legítima de una inconsistencia.
 
-1. **Solo stock actual**: `Product.stockQuantity`. Sin historial. Rápido, sin trazabilidad.
-2. **Solo ledger de movimientos**: no hay `stockQuantity` persistente; el stock se calcula fold de `InventoryMovement`. Event sourcing-lite.
-3. **Híbrido (stock actual + ledger)**: `Product.stockQuantity` es el valor materializado. `InventoryMovement[]` captura cada transición. `stockAfter` se guarda para auditoría.
+## Decisión
 
-## Decision
+Adoptar el modelo híbrido:
 
-**Modelo híbrido (opción 3).** No es event sourcing.
+```text
+Product.stockQuantity + InventoryMovement[]
+```
 
-Invariante por producto:
-- `stockQuantity == último InventoryMovement.stockAfter`.
+`Product.stockQuantity` es el saldo materializado para consultas. `InventoryMovement` es un
+registro inmutable de la transición. No es event sourcing y el listado no reconstruye el saldo
+desde movimientos.
 
-Toda escritura que modifica stock:
-1. calcula before = stockQuantity actual;
-2. computa delta = +n o -n;
-3. calcula after = before + delta;
-4. persiste actualización a `products.stockQuantity = after`;
-5. persiste un `InventoryMovement { stockBefore: before, quantityDelta: delta, stockAfter: after }`;
-6. DENTRO de la misma transacción Dexie.
+Toda mutación se ejecuta en una transacción Dexie `rw` que incluye `products` e
+`inventoryMovements`, vuelve a leer el producto dentro de la transacción, calcula la transición,
+actualiza saldo y `updatedAt`, e inserta el movimiento. Cualquier error aborta ambas escrituras.
 
-## Razones
+Invariantes:
 
-- **Lectura inmediata**: consultar stock es un get directo por ID, sin fold de N movimientos.
-- **Trazabilidad suficiente**: todos los cambios tienen registro con causa (`type`, `referenceId`, `reason`). Sirve para preguntas de bodeguero: "¿por qué bajo a 5?".
-- **Validación de integridad simple**: es O(1) por producto comparar `stockQuantity` vs último `stockAfter`. El diagnóstico lo revisa.
-- **No event sourcing**: si se borraran movimientos antiguos por alguna razón (no recomendado, pero ilustrando), `stockQuantity` sigue siendo la fuente de verdad. En event sourcing el ledger ES la fuente. Aquí no.
+- cantidades y saldos son enteros seguros;
+- `stockQuantity`, `stockBefore` y `stockAfter` nunca son negativos;
+- `stockAfter = stockBefore + quantityDelta`;
+- el último `stockAfter` coincide con `Product.stockQuantity`;
+- stock inicial solo ocurre una vez, desde cero y antes de cualquier otro movimiento;
+- cada producto tiene timestamps de movimientos estrictamente crecientes;
+- un movimiento confirmado no se edita ni se elimina;
+- un conteo sin diferencia devuelve `NO_STOCK_CHANGE` y no escribe.
 
-## Not-implemented
+`Product.updatedAt` representa cualquier modificación persistida del producto, incluido su saldo.
 
-- Event sourcing de inventario.
-- Stock-only sin movimientos.
-- Calculado en runtime por fold.
+## Consecuencias
 
-## Consequences
-
-- Positivo: rendimiento, auditoría y simplicidad mental.
-- Negativo: hay dos representaciones que deben mantenerse sincronizadas.
-  - Mitigación: AMBAS se actualizan siempre dentro de UNA transacción por caso de uso. NUNCA fuera.
-  - Mitigación: `runIntegrityCheck()` detecta inconsistencias.
-- Acción: prueba de `completeSale` valida que se crean los movimientos correctos con before/after; prueba de integridad detecta desvíos.
+- Lecturas rápidas desde `products` y auditoría suficiente desde el ledger.
+- Dos representaciones exigen atomicidad y diagnóstico profundo de consistencia.
+- Una corrección se registra mediante un movimiento nuevo.
+- Los movimientos futuros `sale` y `sale_void` permanecen en el tipo persistido, pero la Fase 3
+  no los genera.
+- No se permite reparación automática: el diagnóstico solo informa producto, movimiento y causa.

@@ -1,5 +1,16 @@
 # 08. Arquitectura de la aplicación
 
+## Comandos y consultas de inventario
+
+Los comandos públicos son `initializeProductStock`, `registerStockEntry`,
+`reconcileProductStock` y `registerStockLoss`. Delegan una intención discriminada a
+`InventoryUnitOfWork`, frontera diseñada alrededor de la consistencia atómica y no de CRUD.
+`InventoryQueries` expone búsqueda, producto, resumen, movimiento individual e historiales.
+
+El dominio no conoce Dexie; infraestructura coordina la transacción y React consume consultas
+reactivas. El catálogo no es dependencia interna de inventario: ambos comparten únicamente los
+registros de infraestructura local según sus responsabilidades de propiedad.
+
 ## Comandos y consultas del catálogo
 
 Comandos: `createCategory`, `updateCategory`, `setCategoryActiveState`,

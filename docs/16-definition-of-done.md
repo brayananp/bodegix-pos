@@ -1,5 +1,13 @@
 # 16. Definition of Done
 
+## Fase 3
+
+La fase exige saldo/ledger atómicos, stock entero no negativo, movimientos append-only, cuatro
+comandos públicos, consultas paginadas y reactivas, migración v2, diagnóstico profundo, formularios
+compuestos, Sheet responsive, URL restaurable, guard de cambios, pruebas de concurrencia/rollback y
+Playwright verde en escritorio y móvil. Ventas, pagos, caja, proveedores, respaldo y backend quedan
+fuera del alcance.
+
 ## Fase 2
 
 La fase exige las seis validaciones del proyecto en verde, CRUD lógico de catálogo,

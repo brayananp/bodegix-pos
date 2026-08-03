@@ -1,5 +1,16 @@
 # Arquitectura de Bodegix POS
 
+## Slice de inventario (Fase 3)
+
+`modules/inventory` es propietario de `inventoryMovements`, de las reglas de mutación y de
+`Product.stockQuantity` después de crear el producto. `catalog` conserva ese campo al editar y
+continúa siendo propietario del nombre, código, categoría, precios, estado y stock mínimo.
+
+La escritura entra por cuatro comandos explícitos y un puerto `InventoryUnitOfWork`; el adaptador
+Dexie relee el producto y actualiza `products` + `inventoryMovements` en una sola transacción. Las
+lecturas entran por `InventoryQueries` y React las observa con `useLiveQuery`. `/inventory` solo
+valida search params y monta la página pública. El ledger no se pliega para construir listados.
+
 ## Slice de catálogo (Fase 2)
 
 `modules/catalog` aplica dominio puro → casos de uso/puertos → adaptador Dexie → UI.

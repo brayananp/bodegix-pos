@@ -1,5 +1,17 @@
 # 13. Especificación UI/UX
 
+## Inventario contextual (Fase 3)
+
+`/inventory` presenta cuatro métricas, pestañas Stock/Movimientos, filtros tipados y paginación.
+Stock usa tabla en escritorio y tarjetas en móvil; movimientos muestran fecha, producto, tipo,
+delta con signo, transición y motivo/referencia.
+
+Un único `InventorySheet` representa `detail`, `initial`, `entry`, `reconcile` y `loss`. Ocupa
+560–720 px en escritorio y pantalla completa en móvil; mantiene encabezado y acciones accesibles,
+scroll interno y safe area. Cambiar operación no anida otro modal. Search params conservan filtros,
+pestaña, página y producto; el formulario permanece fuera de la URL. El guard compartido pide
+confirmación solo si hay cambios sin guardar.
+
 ## Catálogo contextual
 
 `/products` mantiene lista y filtros debajo de las superficies secundarias. Producto
