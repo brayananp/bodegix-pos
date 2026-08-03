@@ -1,5 +1,15 @@
 # Arquitectura de Bodegix POS
 
+## Slice de ventas (Fase 5)
+
+`modules/sales` es propietario de `sales`, `saleItems`, `salePayments` y `saleDrafts`. Coordina una
+transacción atómica sobre 8 tablas: lee catálogo y caja, decrementa inventario, genera movimientos,
+incrementa correlativo y limpia el borrador. El carrito persiste en `saleDrafts/main` (singleton).
+La revisión (`reviewSaleDraft`) es una query pura que compara borrador vs catálogo actual sin
+modificar datos; el usuario decide explícitamente si actualizar precios. Los pagos viven dentro de
+`sales` (no hay módulo `payments` separado en MVP). La transacción garantiza atomicidad: todo o
+nada.
+
 ## Slice de inventario (Fase 3)
 
 `modules/inventory` es propietario de `inventoryMovements`, de las reglas de mutación y de
@@ -39,7 +49,7 @@ revalidan unicidad, categoría activa y conservación del stock.
 src/modules/
 ├── catalog/      Productos y categorías
 ├── inventory/    Stock y movimientos (ledger)
-├── sales/        Ventas + ítems + pagos (pagos dentro de sales en MVP)
+├── sales/        Ventas + ítems + pagos + carrito (transacción atómica multi-tabla)
 ├── cash/         Sesiones de caja
 ├── reporting/    Consultas de lectura (sin dominio propio)
 ├── backup/       Exportación e importación

@@ -1,10 +1,8 @@
 # Bodegix POS
 
-## Estado: Fase 4
+## Estado: Fase 5 ✅
 
-La caja local-first está operativa: permite apertura única, depósitos, retiros, arqueo, cierre e
-historial inmutable. Cada cierre conserva un snapshot auditable y las escrituras críticas se
-ejecutan de forma atómica sobre Dexie.
+El módulo de ventas está completo y operativo: carrito persistido, búsqueda de productos por nombre/código/categoría, revisión automática de precios y stock, checkout con pagos mixtos y transacción atómica que coordina ventas, inventario y caja en un solo commit.
 
 **PWA offline-first de ventas, caja e inventario para bodegas.**
 
@@ -39,7 +37,31 @@ La Fase 1 conserva la fundación técnica e incorpora:
 - StorageManager y panel técnico en Configuración
 - Pruebas reales con `fake-indexeddb`
 
-**Siguiente fase:** Fase 5 — Ventas, carrito y pagos
+**Fase 2 — Catálogo de productos y categorías** ✅
+
+Productos y categorías con búsqueda, filtros, formularios validados y desactivación lógica.
+
+**Fase 3 — Inventario y movimientos de stock** ✅
+
+Inventario híbrido con saldo materializado + ledger inmutable. Operaciones manuales dentro de unidades de trabajo Dexie.
+
+**Fase 4 — Caja, apertura y movimientos de efectivo** ✅
+
+Caja completa: apertura única, depósitos, retiros, arqueo, cierre con snapshot auditable y concurrencia entre pestañas.
+
+**Fase 5 — Ventas, carrito y pagos** ✅
+
+Sistema de ventas completo:
+- Carrito persistido con sobrevivencia a recargas
+- Búsqueda de productos por nombre, código de barras y categoría
+- Validación automática de stock y precios
+- Checkout con pagos mixtos (efectivo, Yape, Plin, POS, transferencia bancaria)
+- Transacción atómica en 8 tablas
+- Resultado de venta con snapshots de productos
+- Interfaz responsive (desktop panel dividido, móvil sheet)
+- Pruebas E2E completas en desktop y móvil
+
+**Siguiente fase:** Fase 6 — Módulo reporting + resumen diario
 
 ## Stack tecnológico
 
@@ -68,7 +90,7 @@ Monolito modular local-first con vertical slices, puertos y adaptadores selectiv
 src/modules/
 ├── catalog/      Productos y categorías
 ├── inventory/    Stock y movimientos
-├── sales/        Ventas + ítems + pagos
+├── sales/        Ventas + ítems + pagos + carrito
 ├── cash/         Sesiones de caja
 ├── reporting/    Consultas de lectura
 ├── backup/       Exportación e importación
@@ -131,7 +153,7 @@ bodegix-pos/
 └── vite.config.ts       TanStack Start + Tailwind
 ```
 
-## Alcance implementado hasta la Fase 4
+## Alcance implementado hasta la Fase 5
 
 El proyecto **contiene:**
 - Base técnica y configuración completa
@@ -141,7 +163,7 @@ El proyecto **contiene:**
 - Shared kernel con utilidades reales y probadas
 - Suite de pruebas completa (unit + componentes + arquitectura + E2E)
 - CI/CD en GitHub Actions
-- Esquema local v1, bootstrap, persistencia, cuota y diagnóstico
+- Esquema local v4, bootstrap, persistencia, cuota y diagnóstico
 - Provider cliente con estados de inicialización, error y reintento
 - Catálogo completo de productos y categorías con desactivación lógica
 - Inventario híbrido: saldo materializado más ledger inmutable
@@ -150,13 +172,24 @@ El proyecto **contiene:**
 - Diagnóstico profundo de integridad del ledger y migración de esquema v1 a v2
 - Caja completa: apertura única, depósitos, retiros, arqueo, cierre e historial inmutable
 - Snapshot de cierre y migración v2 a v3, consultas reactivas y concurrencia entre pestañas
+- **Sistema de ventas completo:**
+  - Carrito persistido (`saleDrafts`) con sobrevivencia a recargas
+  - Búsqueda y filtrado de productos en tiempo real
+  - Gestión de cantidades con validación de stock
+  - Revisión automática de cambios de precio
+  - Checkout con pagos mixtos y múltiples métodos
+  - Transacción atómica en 8 tablas (ventas + inventario + caja)
+  - Resultado de venta con snapshots
+  - Correlativo de ventas automático (V-000001, V-000002...)
+  - Interfaz responsive optimizada para desktop y móvil
 
 Todavía **no contiene:**
-- Carrito de compras
-- Pagos
-- Ventas y carrito
-- Reportes reales
+- Anulaciones de venta
+- Historial administrativo de ventas
+- Reportes detallados
+- Resumen diario automático
 - Service worker completo
+- Exportación de datos
 
 ## Próximas fases
 
@@ -166,7 +199,7 @@ Todavía **no contiene:**
 | **Fase 2** | Catálogo de productos y categorías ✅ |
 | **Fase 3** | Inventario y movimientos de stock ✅ |
 | **Fase 4** | Caja, apertura y movimientos de efectivo ✅ |
-| Fase 5 | Ventas, carrito y pagos |
+| **Fase 5** | Ventas, carrito y pagos ✅ |
 | Fase 6 | Módulo reporting + resumen diario |
 | Fase 7 | Módulo backup + exportación |
 | Fase 8 | Módulo settings + configuración |
@@ -180,6 +213,9 @@ Todavía **no contiene:**
 - [Convenciones](docs/conventions.md)
 - [Base de datos local](docs/local-database.md)
 - [Esquema v1](docs/database-schema-v1.md)
+- [Esquema v2](docs/database-schema-v2.md)
+- [Esquema v3](docs/database-schema-v3.md)
+- [Esquema v4](docs/database-schema-v4.md)
 - [Migraciones](docs/database-migrations.md)
 - [Persistencia de almacenamiento](docs/storage-persistence.md)
 - [Módulo de inventario](docs/modules/inventory.md)
@@ -190,4 +226,9 @@ Todavía **no contiene:**
 - [Casos de uso de caja](docs/use-cases/cash-use-cases.md)
 - [Interfaz de caja](docs/ui/cash-ui.md)
 - [Integridad y snapshot de caja](docs/database/cash-integrity.md)
+- [Módulo de ventas](docs/modules/sales.md)
+- [Casos de uso de ventas](docs/use-cases/sales-use-cases.md)
+- [Interfaz de ventas](docs/ui/sale-ui.md)
+- [Integridad de ventas](docs/database/sale-integrity.md)
+- [Borrador del carrito](docs/database/sale-draft.md)
 - [ADRs](docs/adr/)

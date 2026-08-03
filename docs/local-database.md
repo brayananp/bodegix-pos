@@ -1,11 +1,10 @@
 # Base de datos local
 
-## Estado en Fase 4
+## Estado en Fase 5
 
-La versión vigente es 3. Registra v1, v2 y v3; sus definiciones permanecen inmutables. V2 añade
-índices compuestos de inventario. V3 agrega el snapshot histórico de caja y migra registros previos
-con valores `null`. El diagnóstico profundo incluye `inventory-ledger-integrity` y
-`cash-integrity`; ambos informan inconsistencias sin reparar datos.
+La versión vigente es 4. Registra v1–v4; sus definiciones permanecen inmutables. V4 añade
+`saleDrafts` para el carrito persistido (`id, updatedAt`). El diagnóstico profundo incluye
+`inventory-ledger-integrity`, `cash-integrity` y `sales-integrity`.
 
 ## Decisión
 
@@ -51,7 +50,7 @@ válida sobreviven a recargas e inicializaciones concurrentes. Una configuració
 |---|---|
 | catalog | `categories`, `products` |
 | inventory | `inventoryMovements` |
-| sales | `sales`, `saleItems`, `salePayments` |
+| sales | `sales`, `saleItems`, `salePayments`, `saleDrafts` |
 | cash | `cashSessions`, `cashMovements` |
 | settings | `appSettings` |
 
