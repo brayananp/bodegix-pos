@@ -190,6 +190,61 @@ describe("Arquitectura — rutas no importan infraestructura privada de módulos
 
 		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
 	});
+
+	it("las rutas no importan Dexie ni la base local", () => {
+		const violations: string[] = [];
+		for (const file of routeFiles) {
+			for (const imp of getImports(file)) {
+				if (imp === "dexie" || imp === "dexie-react-hooks" || imp.includes("local-db")) {
+					violations.push(`${relative(SRC, file)}: importa "${imp}"`);
+				}
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+});
+
+describe("Arquitectura — límites de infraestructura local", () => {
+	it("shared/infrastructure no importa UI, app ni módulos", () => {
+		const files = collectFiles(join(SRC, "shared/infrastructure"));
+		const violations: string[] = [];
+		for (const file of files) {
+			for (const imp of getImports(file)) {
+				if (/^(#|@)\/(app|modules|shared\/components)/.test(imp)) {
+					violations.push(`${relative(SRC, file)}: importa "${imp}"`);
+				}
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("componentes compartidos no importan Dexie ni tablas locales", () => {
+		const files = collectFiles(join(SRC, "shared/components"));
+		const violations: string[] = [];
+		for (const file of files) {
+			for (const imp of getImports(file)) {
+				if (imp === "dexie" || imp === "dexie-react-hooks" || imp.includes("local-db")) {
+					violations.push(`${relative(SRC, file)}: importa "${imp}"`);
+				}
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("domain y application no dependen de React o Dexie", () => {
+		const files = collectFiles(join(SRC, "modules")).filter((file) =>
+			/[\\/](domain|application)[\\/]/.test(file),
+		);
+		const violations: string[] = [];
+		for (const file of files) {
+			for (const imp of getImports(file)) {
+				if (imp === "react" || imp.startsWith("react/") || imp.startsWith("dexie")) {
+					violations.push(`${relative(SRC, file)}: importa "${imp}"`);
+				}
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
 });
 
 describe("Arquitectura — módulos tienen API pública (index.ts)", () => {

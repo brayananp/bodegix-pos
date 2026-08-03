@@ -38,3 +38,9 @@ Object.defineProperty(window, "matchMedia", {
 		dispatchEvent: () => false,
 	}),
 });
+
+// TanStack Router usa scrollTo durante la restauración; jsdom solo expone un stub que lanza.
+Object.defineProperty(window, "scrollTo", {
+	writable: true,
+	value: () => undefined,
+});

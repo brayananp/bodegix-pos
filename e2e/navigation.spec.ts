@@ -68,28 +68,32 @@ test.describe("Bodegix POS — Sidebar desktop", () => {
 
 	test("el sidebar de desktop está visible", async ({ page }) => {
 		await page.goto("/sale");
-		await expect(page.locator("aside")).toBeVisible();
+		await expect(page.getByRole("complementary", { name: "Navegación principal" })).toBeVisible();
 	});
 
 	test("el link activo en sidebar tiene aria-current=page", async ({ page }) => {
 		await page.goto("/sale");
 		// El link de Venta debe estar marcado como página actual
-		const activeLink = page.locator("aside").getByRole("link", { name: /Punto de Venta/i });
+		const activeLink = page
+			.getByRole("complementary", { name: "Navegación principal" })
+			.getByRole("link", { name: "Venta", exact: true });
 		await expect(activeLink).toHaveAttribute("aria-current", "page");
 	});
 
 	test("navegar via clic en el sidebar", async ({ page }) => {
 		await page.goto("/sale");
 		await page
-			.locator("aside")
-			.getByRole("link", { name: /Catálogo de productos/i })
+			.getByRole("complementary", { name: "Navegación principal" })
+			.getByRole("link", { name: "Productos" })
 			.click();
 		await expect(page).toHaveURL(/\/products/);
 	});
 
 	test("el nombre Bodegix aparece en el sidebar", async ({ page }) => {
 		await page.goto("/sale");
-		await expect(page.locator("aside").getByText("Bodegix")).toBeVisible();
+		await expect(
+			page.getByRole("complementary", { name: "Navegación principal" }).getByText("Bodegix"),
+		).toBeVisible();
 	});
 });
 
