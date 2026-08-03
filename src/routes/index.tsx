@@ -6,7 +6,10 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
  */
 export const Route = createFileRoute("/")({
 	beforeLoad: () => {
-		throw redirect({ to: "/sale" });
+		throw redirect({
+			to: "/sale",
+			search: { q: "", categoryId: null, panel: null, saleId: null },
+		});
 	},
 	component: () => null,
 });
