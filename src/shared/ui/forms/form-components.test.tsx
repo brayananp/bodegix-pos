@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { useAppForm } from "./app-form";
 
-type FieldKind = "text" | "money" | "integer" | "barcode";
+type FieldKind = "text" | "textarea" | "money" | "integer" | "barcode";
 
 function FieldHarness({ kind, onValue }: { kind: FieldKind; onValue?(value: string): void }) {
 	const form = useAppForm({ defaultValues: { value: "" } });
@@ -18,6 +18,7 @@ function FieldHarness({ kind, onValue }: { kind: FieldKind; onValue?(value: stri
 				if (kind === "money") return <field.MoneyField {...common} />;
 				if (kind === "integer") return <field.IntegerField {...common} />;
 				if (kind === "barcode") return <field.BarcodeField {...common} />;
+				if (kind === "textarea") return <field.TextareaField {...common} />;
 				return <field.TextField {...common} />;
 			}}
 		</form.AppField>
@@ -62,6 +63,16 @@ describe("composición compartida de formularios", () => {
 		await user.type(input, "12.");
 		expect(input).toHaveValue("12.");
 		expect(screen.getByText("S/")).toBeVisible();
+	});
+
+	it("TextareaField conecta valor, descripción y validación accesible", async () => {
+		const user = userEvent.setup();
+		render(<FieldHarness kind="textarea" />);
+		const input = screen.getByLabelText("Valor");
+		await user.type(input, "a");
+		await user.tab();
+		expect(input).toHaveValue("a");
+		expect(screen.getByRole("alert")).toHaveTextContent("Escribe al menos dos caracteres");
 	});
 
 	it("BarcodeField conserva ceros iniciales", async () => {

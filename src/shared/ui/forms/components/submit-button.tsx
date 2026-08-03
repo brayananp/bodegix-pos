@@ -6,11 +6,13 @@ import { useFormContext } from "../form-context";
 interface SubmitButtonProps extends Omit<ComponentProps<typeof Button>, "type" | "disabled"> {
 	label: string;
 	submittingLabel?: string;
+	forceDisabled?: boolean;
 }
 
 export function SubmitButton({
 	label,
 	submittingLabel = "Guardando…",
+	forceDisabled = false,
 	...props
 }: SubmitButtonProps) {
 	const form = useFormContext();
@@ -22,7 +24,7 @@ export function SubmitButton({
 			})}
 		>
 			{({ canSubmit, isSubmitting }) => (
-				<Button type="submit" disabled={!canSubmit || isSubmitting} {...props}>
+				<Button type="submit" disabled={forceDisabled || !canSubmit || isSubmitting} {...props}>
 					{isSubmitting && <Spinner data-icon="inline-start" aria-hidden="true" />}
 					{isSubmitting ? submittingLabel : label}
 				</Button>

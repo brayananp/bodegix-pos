@@ -10,6 +10,7 @@ import { IntegerField } from "./fields/integer-field";
 import { MoneyField } from "./fields/money-field";
 import { SelectField } from "./fields/select-field";
 import { TextField } from "./fields/text-field";
+import { TextareaField } from "./fields/textarea-field";
 import { fieldContext, formContext } from "./form-context";
 
 export const { useAppForm, withForm, withFieldGroup } = createFormHook({
@@ -17,6 +18,7 @@ export const { useAppForm, withForm, withFieldGroup } = createFormHook({
 	formContext,
 	fieldComponents: {
 		TextField,
+		TextareaField,
 		MoneyField,
 		IntegerField,
 		BarcodeField,

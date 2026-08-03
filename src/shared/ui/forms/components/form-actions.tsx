@@ -6,6 +6,7 @@ interface FormActionsProps {
 	submitLabel: string;
 	submittingLabel?: string;
 	cancelLabel?: string;
+	submitDisabled?: boolean;
 }
 
 export function FormActions({
@@ -13,13 +14,18 @@ export function FormActions({
 	submitLabel,
 	submittingLabel,
 	cancelLabel = "Cancelar",
+	submitDisabled = false,
 }: FormActionsProps) {
 	return (
 		<div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
 			<Button type="button" variant="outline" onClick={onCancel}>
 				{cancelLabel}
 			</Button>
-			<SubmitButton label={submitLabel} {...(submittingLabel ? { submittingLabel } : {})} />
+			<SubmitButton
+				label={submitLabel}
+				forceDisabled={submitDisabled}
+				{...(submittingLabel ? { submittingLabel } : {})}
+			/>
 		</div>
 	);
 }
