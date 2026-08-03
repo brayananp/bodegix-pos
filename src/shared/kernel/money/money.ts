@@ -39,18 +39,24 @@ export function parseMoneyToCents(value: string): MoneyCents {
 		);
 	}
 
-	const parsed = Number.parseFloat(normalized);
+	const [wholePart = "0", decimalPart = ""] = normalized.split(".");
+	const wholeCents = Number(wholePart) * 100;
+	const fractionalCents = Number(decimalPart.padEnd(2, "0"));
+	const cents = wholeCents + fractionalCents;
 
-	if (!Number.isFinite(parsed)) {
-		throw new Error(`Valor monetario inválido: "${value}".`);
+	if (!Number.isSafeInteger(cents)) {
+		throw new Error(`Valor monetario fuera de rango: "${value}".`);
 	}
 
-	if (parsed < 0) {
-		throw new Error(`El importe no puede ser negativo. Recibido: "${value}".`);
-	}
+	return cents as MoneyCents;
+}
 
-	// Multiplicar por 100 y redondear para eliminar residuos de coma flotante
-	return Math.round(parsed * 100) as MoneyCents;
+/** Convierte céntimos a un valor editable, sin símbolo de moneda. */
+export function moneyCentsToInput(value: number): string {
+	assertValidMoney(value);
+	const whole = Math.floor(value / 100);
+	const fraction = String(value % 100).padStart(2, "0");
+	return `${whole}.${fraction}`;
 }
 
 /**
@@ -59,7 +65,7 @@ export function parseMoneyToCents(value: string): MoneyCents {
  * @example formatMoney(350) → "S/ 3.50"
  * @example formatMoney(0)   → "S/ 0.00"
  */
-export function formatMoney(value: MoneyCents, currency: "PEN" = "PEN"): string {
+export function formatMoney(value: number, currency: "PEN" = "PEN"): string {
 	assertValidMoney(value);
 
 	const amount = value / 100;

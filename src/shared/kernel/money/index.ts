@@ -8,6 +8,7 @@ export {
 	assertValidMoney,
 	formatMoney,
 	isValidMoney,
+	moneyCentsToInput,
 	multiplyMoney,
 	parseMoneyToCents,
 } from "./money";
