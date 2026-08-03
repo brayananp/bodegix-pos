@@ -1,10 +1,11 @@
 # Base de datos local
 
-## Estado en Fase 3
+## Estado en Fase 4
 
-La versión vigente es 2. Registra v1 y luego v2; ambas definiciones permanecen inmutables. V2
-añade índices compuestos de inventario y no transforma datos. El modo de diagnóstico profundo
-incluye `inventory-ledger-integrity`, que informa inconsistencias de saldo e historial sin reparar.
+La versión vigente es 3. Registra v1, v2 y v3; sus definiciones permanecen inmutables. V2 añade
+índices compuestos de inventario. V3 agrega el snapshot histórico de caja y migra registros previos
+con valores `null`. El diagnóstico profundo incluye `inventory-ledger-integrity` y
+`cash-integrity`; ambos informan inconsistencias sin reparar datos.
 
 ## Decisión
 
@@ -63,7 +64,8 @@ módulo encapsulará acceso en sus adaptadores y expondrá casos de uso o query 
 `LocalDatabaseError` expone códigos estables y mensajes seguros para falta de IndexedDB, apertura,
 versión, inicialización, configuración y diagnóstico. El diagnóstico `basic` revisa apertura,
 versión, tablas, settings, correlativo y caja abierta. El modo `deep`, activado manualmente, añade
-relaciones huérfanas. Ambos son de solo lectura.
+relaciones huérfanas, consistencia del ledger y sesiones, movimientos y snapshots de caja. Ambos
+son de solo lectura.
 
 Fuentes verificadas: [Dexie TypeScript](https://dexie.org/docs/Typescript),
 [Version.stores()](https://dexie.org/docs/Version/Version.stores%28%29),

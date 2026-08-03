@@ -140,3 +140,10 @@ Para despliegue, el servidor debe redirigir todas las rutas al `index.html`:
 - **Nginx:** `try_files $uri $uri/ /index.html;`
 - **Apache:** `FallbackResource /index.html`
 - **Vercel/Netlify:** rewrite `/*` → `/index.html`
+
+## Fase 4: caja
+
+`cash` aplica el mismo corte vertical que inventario: dominio puro, comandos sobre
+`CashUnitOfWork`, lecturas mediante `CashQueries`, adaptadores Dexie y hooks reactivos. Puede leer
+la API persistida de ventas para agregación, pero nunca escribirla. El snapshot separa la consulta
+histórica de los datos vivos.

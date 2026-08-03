@@ -122,3 +122,8 @@ src/app/layout/
 ```
 
 Los tests E2E van en la carpeta `e2e/` en la raíz del proyecto.
+
+La Fase 4 agrega pruebas puras de cálculos/reglas, formularios, componentes, search params,
+integración Dexie, migración v3, diagnóstico y el ciclo E2E apertura → depósito → retiro → cierre →
+detalle. La integración incluye doble apertura, retiros concurrentes, rollback y fixtures directos
+de ventas/pagos sin implementar ventas.

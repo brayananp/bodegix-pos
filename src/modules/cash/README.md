@@ -11,4 +11,6 @@ Sesiones de caja: apertura, movimientos y cierre.
 
 ## Estado actual
 
-Fase 0: solo se define el límite del módulo y la API pública.
+Fase 4 completa: dominio, comandos, consultas, transacciones Dexie, snapshot v3, diagnóstico,
+formularios compuestos, `/cash`, historial, detalle y pruebas desktop/móvil. Ventas y pagos se leen
+solo como fixtures persistidos; su creación pertenece a la Fase 5.

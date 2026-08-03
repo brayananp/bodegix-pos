@@ -226,3 +226,9 @@ Sobre releases / tags:
 ```bash
 pnpm e2e:full          # playwright full suite
 ```
+
+## Cobertura Fase 4
+
+Vitest cubre cálculos, reglas, mapeadores, formularios, componentes, arquitectura, migración,
+diagnóstico y transacciones. Playwright ejecuta el ciclo completo de caja en escritorio y móvil,
+incluidos descarte, botón atrás, recarga y ausencia de errores de consola.

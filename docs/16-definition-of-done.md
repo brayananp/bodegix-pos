@@ -120,3 +120,10 @@ Se considera lista y estable cuando:
 - Formulario de feedback.
 - Procedimiento de respaldo antes de cada jornada.
 - Procedimiento de rollback.
+
+### Fase 4 — caja
+
+Comandos y consultas públicas, transacciones concurrentes, snapshot v3, diagnóstico, formularios
+compuestos, overlays responsive, URL restaurable, indicador global y pruebas unitarias,
+integración/componentes/arquitectura/E2E están implementados. Ventas, pagos, reapertura y respaldo
+permanecen fuera del alcance.

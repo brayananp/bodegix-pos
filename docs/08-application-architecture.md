@@ -434,3 +434,9 @@ Hoy no hay frontera de negocio. No se extrae.
 11. **CQRS pesado**: crear un CommandBus/QueryBus distribuido, 2 bases de datos, proyecciones cron.
 12. **Microservicios prematuramente** (o para MVP).
 13. **Todo es un agregado**: tratar `InventoryMovement` o `SalePayment` como agregados propios con repositorios.
+
+## Slice cash implementado
+
+Los comandos delegan en `CashUnitOfWork`; las consultas paginadas y resúmenes dependen de
+`CashQueries`. No existe repositorio genérico. La infraestructura traduce Dexie y el módulo expone
+una API pública única desde `src/modules/cash/index.ts`.

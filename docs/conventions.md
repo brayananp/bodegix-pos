@@ -130,3 +130,9 @@ importa UI. Los módulos acceden a persistencia futura mediante adaptadores priv
 - No usar `as Type` innecesariamente. Preferir type guards.
 - No usar `enum`. Usar uniones literales (`type X = "a" | "b"`).
 - Activar y respetar `noUncheckedIndexedAccess`: acceder a arrays con verificación.
+
+## Caja
+
+Importes en céntimos; motivos 3–160 caracteres. Movimientos y cierres no exponen update/delete.
+Los hooks `useCash*` son el único lugar de UI con `useLiveQuery`. `panel` y `sessionId` viven en la
+URL; dinero contado y motivos viven solo en TanStack Form.

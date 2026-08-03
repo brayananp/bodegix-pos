@@ -11,8 +11,9 @@
 
 La v1 es la primera versión publicada. La v2 de Fase 3 conserva todas las tablas/registros y añade
 dos índices compuestos a `inventoryMovements`; Dexie reconstruye índices al abrir sin necesitar un
-callback `upgrade()`. La prueba crea una base v1 real, inserta datos y la abre con la clase v2 para
-comprobar conservación e índices.
+callback `upgrade()`. La v3 de Fase 4 incorpora campos nullable de snapshot a `cashSessions` con un
+`upgrade()` explícito: los registros previos reciben `null` sin alterar su cuadre. Las pruebas abren
+bases reales de versiones anteriores y comprueban conservación, migración y reapertura.
 
 ## Procedimiento futuro
 

@@ -111,3 +111,8 @@
 | FR-PWA-004 | Informar cuando existe una actualización. | MUST |
 | FR-PWA-005 | Evitar recarga automática durante una venta. | MUST |
 | FR-PWA-006 | Informar estado de persistencia y almacenamiento. | SHOULD |
+
+## Implementación Fase 4
+
+Se implementaron apertura única, fondo inicial, depósitos, retiros limitados por efectivo esperado,
+arqueo, cierre con diferencia, historial paginado, detalle persistente y estado global reactivo.

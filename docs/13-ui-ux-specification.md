@@ -312,3 +312,9 @@ Usar `toast.success / toast.error / toast.info / toast.warning` para feedback en
 
 La referencia práctica vigente es `src/modules/catalog/ui/forms`: composición común,
 validación Zod por blur/submit, feedback con Sonner y reset tras persistencia exitosa.
+
+## Interfaz de caja implementada
+
+`/cash` alterna Caja actual/Historial. Apertura y movimiento son Dialog/Drawer responsive; cierre y
+detalle son Sheet. Search params restauran panel y sesión. El guard compartido protege cambios y la
+diferencia usa texto Cuadrada/Sobrante/Faltante además del color.

@@ -178,3 +178,9 @@ Una venta anulada:
 - queda visible en auditoría.
 
 En el MVP no se automatiza devolución del dinero. La devolución física o externa se realiza fuera de la aplicación y se deja documentada en el motivo.
+
+## Estado Fase 4
+
+Caja ya agrega pagos persistidos confirmados o verificados manualmente por método y excluye ventas
+o pagos anulados. Usa `amountCents`, nunca `cashReceivedCents`; solo efectivo entra en la fórmula.
+La creación de ventas y pagos queda reservada para la Fase 5.

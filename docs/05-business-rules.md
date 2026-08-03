@@ -233,3 +233,9 @@ Los límites diarios se calculan con la zona horaria configurada.
 ### BR-TIM-003
 
 Una jornada de caja puede cruzar medianoche; el resumen de caja se basa en su sesión, no solo en fecha calendario.
+
+## Reglas de caja implementadas
+
+Solo existe 0 o 1 caja abierta. El esperado es inicial + ventas en efectivo + depósitos − retiros.
+La diferencia es contado − esperado. Sesiones cerradas y movimientos son inmutables; pagos
+digitales no afectan efectivo físico.

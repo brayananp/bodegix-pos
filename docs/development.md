@@ -115,6 +115,10 @@ export type MiModuloId = typeof MI_MODULO;
 
 La política completa de versiones está en [database-migrations.md](./database-migrations.md).
 
+Para caja, toda escritura debe atravesar `CashUnitOfWork`. No se actualizan snapshots desde UI ni
+se escriben `sales`/`salePayments`. Al cambiar registros o esquema, ejecutar las pruebas focales de
+`src/modules/cash`, la migración v3, diagnóstico profundo y `e2e/cash.spec.ts`.
+
 ## Convenciones generales
 
 Ver [docs/conventions.md](./conventions.md) para el detalle completo.

@@ -1,10 +1,10 @@
 # Bodegix POS
 
-## Estado: Fase 3
+## Estado: Fase 4
 
-El catálogo local-first está operativo y `/inventory` permite consultar existencias, registrar
-stock inicial, entradas, conciliaciones y pérdidas, además de revisar el historial inmutable. Las
-escrituras de stock y movimiento son atómicas; los saldos son enteros y nunca negativos.
+La caja local-first está operativa: permite apertura única, depósitos, retiros, arqueo, cierre e
+historial inmutable. Cada cierre conserva un snapshot auditable y las escrituras críticas se
+ejecutan de forma atómica sobre Dexie.
 
 **PWA offline-first de ventas, caja e inventario para bodegas.**
 
@@ -39,7 +39,7 @@ La Fase 1 conserva la fundación técnica e incorpora:
 - StorageManager y panel técnico en Configuración
 - Pruebas reales con `fake-indexeddb`
 
-**Siguiente fase:** Fase 4 — Caja, apertura y movimientos de efectivo
+**Siguiente fase:** Fase 5 — Ventas, carrito y pagos
 
 ## Stack tecnológico
 
@@ -131,7 +131,7 @@ bodegix-pos/
 └── vite.config.ts       TanStack Start + Tailwind
 ```
 
-## Alcance implementado hasta la Fase 3
+## Alcance implementado hasta la Fase 4
 
 El proyecto **contiene:**
 - Base técnica y configuración completa
@@ -148,11 +148,13 @@ El proyecto **contiene:**
 - Operaciones manuales de stock dentro de una unidad de trabajo Dexie
 - Resumen, filtros, historial global y por producto con consultas reactivas
 - Diagnóstico profundo de integridad del ledger y migración de esquema v1 a v2
+- Caja completa: apertura única, depósitos, retiros, arqueo, cierre e historial inmutable
+- Snapshot de cierre y migración v2 a v3, consultas reactivas y concurrencia entre pestañas
 
 Todavía **no contiene:**
 - Carrito de compras
 - Pagos
-- Apertura/cierre de caja
+- Ventas y carrito
 - Reportes reales
 - Service worker completo
 
@@ -163,7 +165,7 @@ Todavía **no contiene:**
 | **Fase 1** | Infraestructura local con Dexie e IndexedDB ✅ |
 | **Fase 2** | Catálogo de productos y categorías ✅ |
 | **Fase 3** | Inventario y movimientos de stock ✅ |
-| Fase 4 | Caja, apertura y movimientos de efectivo |
+| **Fase 4** | Caja, apertura y movimientos de efectivo ✅ |
 | Fase 5 | Ventas, carrito y pagos |
 | Fase 6 | Módulo reporting + resumen diario |
 | Fase 7 | Módulo backup + exportación |
@@ -184,4 +186,8 @@ Todavía **no contiene:**
 - [Casos de uso de inventario](docs/use-cases/inventory-use-cases.md)
 - [Interfaz de inventario](docs/ui/inventory-ui.md)
 - [Integridad de inventario](docs/database/inventory-integrity.md)
+- [Módulo de caja](docs/modules/cash.md)
+- [Casos de uso de caja](docs/use-cases/cash-use-cases.md)
+- [Interfaz de caja](docs/ui/cash-ui.md)
+- [Integridad y snapshot de caja](docs/database/cash-integrity.md)
 - [ADRs](docs/adr/)

@@ -226,3 +226,9 @@ Coinciden a menudo, pero no son lo mismo. El dominio define las invariantes (`pa
 - No exponer `db` fuera de `shared/infrastructure` y los adaptadores de módulo.
 - No realizar escrituras parciales en UI/Rutas.
 - No introducir campos de sincronización (`tenantId`, `syncStatus`, `serverVersion`, `deletedAt`) hasta que exista un backend que los use.
+
+## Versión 3
+
+El esquema v3 agrega campos no indexados de snapshot a `cashSessions` mediante upgrade explícito.
+Los índices de sesiones, movimientos, ventas y pagos permanecen intactos. Cierre y retiro incluyen
+en su transacción todas las tablas necesarias para recalcular el efectivo definitivo.

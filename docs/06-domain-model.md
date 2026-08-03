@@ -290,3 +290,9 @@ Product  1 ─── 0..* SaleItem  (referencia histórica, snapshots evitan dep
 | InventoryMovement | Entidad historial | tabla `inventoryMovements` |
 
 Regla: en el MVP NO introducir `ProductPersistenceModel`, `ProductDTO`, `ProductMapper` artificiales si el shape coincide. Diferenciar solo cuando exista un desajuste real.
+
+## Snapshot de caja (Fase 4)
+
+`CashSession` conserva el cuadre y el registro persistido agrega el desglose final por ventas,
+método de pago y movimientos manuales. `CashSessionSummary` es una proyección: viva para sesiones
+abiertas y congelada para cerradas.

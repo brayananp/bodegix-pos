@@ -99,17 +99,17 @@ Tareas:
 
 ## Fase 4. Caja
 
-**Módulo**: `cash`
+**Módulo**: `cash` ✅
 
 Tareas:
-- [ ] Dominio: `CashSession` (abierta/cerrada), `CashMovement` depósito/retiro
-- [ ] Casos de uso: `openCashSession(openingCash)`, `registerCashDeposit`, `registerCashWithdrawal`, `closeCashSession(countedCash)`
+- [x] Dominio: `CashSession` (abierta/cerrada), `CashMovement` depósito/retiro
+- [x] Casos de uso: `openCashSession(openingCash)`, `registerCashDeposit`, `registerCashWithdrawal`, `closeCashSession(countedCash)`
   - `closeCashSession`: calcula `expectedCash = opening + sales_cash_total + deposits - withdrawals - change`
   - `NO_OPEN_CASH_SESSION`, `CASH_SESSION_ALREADY_OPEN`, `CASH_SESSION_ALREADY_CLOSED`
-- [ ] Consultas: `getOpenCashSession`, `getCashSessionSummary(id)`
-- [ ] Pantalla `/cash`: apertura, movimientos, botón de cierre con conteo
-- [ ] Tests: máximo 1 caja abierta, cierre calcula diferencia correcta
-- [ ] E2E: full-cycle de caja
+- [x] Consultas: `getOpenCashSession`, `getCashSessionSummary(id)`
+- [x] Pantalla `/cash`: apertura, movimientos, botón de cierre con conteo
+- [x] Tests: máximo 1 caja abierta, cierre calcula diferencia correcta
+- [x] E2E: full-cycle de caja
 
 ---
 

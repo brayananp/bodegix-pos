@@ -1,7 +1,7 @@
 # Contexto de Bodegix POS
 
 > Documento vivo de incorporación, relevo y contexto para personas y agentes de desarrollo.
-> Última actualización: 2026-08-03. Estado cubierto: Fases 1, 2 y 3 completadas.
+> Última actualización: 2026-08-03. Estado cubierto: Fases 1, 2, 3 y 4 completadas.
 
 ## Cómo usar este documento
 
@@ -26,8 +26,9 @@ servidor de negocio.
 
 La aplicación actual es una SPA de TanStack Start. Los datos se almacenan localmente en
 IndexedDB mediante Dexie. La Fase 1 dejó lista la infraestructura, la Fase 2 implementó el
-catálogo y la Fase 3 implementó inventario con saldo materializado, ledger inmutable, operaciones
-atómicas, consultas reactivas, diagnóstico y UI responsive.
+catálogo, la Fase 3 implementó inventario con saldo materializado y ledger inmutable, y la Fase 4
+implementó caja con apertura única, movimientos manuales, arqueo, cierre, snapshot histórico,
+consultas reactivas, diagnóstico y UI responsive.
 
 ## Estado actual
 
@@ -73,6 +74,23 @@ Cada cambio actualiza `Product.stockQuantity` e inserta un `InventoryMovement` d
 transacción. Las cantidades son enteras, el saldo no puede ser negativo y los movimientos no se
 editan ni eliminan.
 
+### Fase 4 — Caja: completada
+
+En `/cash` se puede:
+
+- abrir una única sesión con fondo inicial;
+- registrar depósitos y retiros manuales con motivo;
+- impedir retiros superiores al efectivo esperado;
+- consultar efectivo esperado, ventas por método y movimientos;
+- arquear y cerrar la caja mostrando faltante, cuadre o sobrante;
+- consultar el historial paginado y el detalle de cada cierre;
+- restaurar pestaña, panel y sesión desde la URL.
+
+El efectivo esperado es `inicial + ventas en efectivo + depósitos − retiros`; la diferencia es
+`contado − esperado`. El cierre persiste un snapshot definitivo para que el historial no cambie
+si ventas, pagos o movimientos posteriores evolucionan. Las sesiones cerradas y movimientos son
+inmutables.
+
 ### Estado de los demás módulos
 
 | Módulo | Estado funcional |
@@ -81,7 +99,7 @@ editan ni eliminan.
 | `settings` | Infraestructura y diagnóstico local de Fase 1. No es configuración completa. |
 | `inventory` | Implementado en Fase 3. |
 | `sales` | Solo límite del módulo y tablas preparadas. Sin carrito ni ventas. |
-| `cash` | Solo límite del módulo y tablas preparadas. Sin apertura o cierre funcional. |
+| `cash` | Implementado en Fase 4. |
 | `reporting` | Solo límite del módulo. Sin consultas de negocio reales. |
 | `backup` | Solo límite del módulo. Sin exportación, importación o restauración. |
 
@@ -181,9 +199,10 @@ compatibilidad, pero no es el recomendado.
 
 - Nombre de la base: `bodegix-pos`.
 - Motor: Dexie 4 sobre IndexedDB.
-- Versión actual: `2`.
-- La versión 1 publicada es inmutable. La v2 añade índices compuestos del historial y su migración
-  está probada; cada cambio futuro requiere otra versión.
+- Versión actual: `3`.
+- Las versiones publicadas v1, v2 y v3 son inmutables. La v2 añade índices compuestos de
+  inventario. La v3 agrega campos nullable de snapshot a `cashSessions` mediante un upgrade
+  explícito que conserva el cuadre previo. Cada cambio futuro requiere otra versión.
 - La base se crea y abre únicamente en el navegador mediante `getLocalDatabase()`.
 - Importar módulos durante SSR o generación del shell no abre IndexedDB.
 - Los valores ausentes se persisten como `null`, no como `undefined`.
@@ -191,18 +210,18 @@ compatibilidad, pero no es el recomendado.
 - Los timestamps se persisten como epoch milliseconds UTC.
 - Los IDs se generan con `crypto.randomUUID()`.
 
-### Tablas del esquema v2
+### Tablas del esquema v3
 
 | Tabla | Propietario | Uso actual |
 |---|---|---|
 | `categories` | catalog | Funcional. |
 | `products` | catalog | Funcional; contiene el stock materializado. |
 | `inventoryMovements` | inventory | Funcional; ledger append-only de inventario. |
-| `sales` | sales | Preparada, todavía sin flujo funcional. |
+| `sales` | sales | Preparada; caja la consulta, pero todavía no existe flujo de ventas. |
 | `saleItems` | sales | Preparada, todavía sin flujo funcional. |
-| `salePayments` | sales | Preparada, todavía sin flujo funcional. |
-| `cashSessions` | cash | Preparada, todavía sin flujo funcional. |
-| `cashMovements` | cash | Preparada, todavía sin flujo funcional. |
+| `salePayments` | sales | Preparada; caja la consulta sin escribir pagos. |
+| `cashSessions` | cash | Funcional; sesión, cuadre y snapshot histórico. |
+| `cashMovements` | cash | Funcional; depósitos y retiros append-only. |
 | `appSettings` | settings | Funcional para bootstrap y diagnóstico. |
 
 IndexedDB no ofrece foreign keys. Los casos de uso deben comprobar relaciones al escribir y los
@@ -304,6 +323,8 @@ Existe una sola infraestructura de TanStack Form en `src/shared/ui/forms`:
 - `useAppForm`, `withForm` y `withFieldGroup` son las APIs comunes;
 - `AppField` y `AppForm` evitan repetir el cableado de eventos, errores y accesibilidad;
 - `ProductFormFields` usa `withForm` para componer los campos del producto;
+- los formularios de apertura, movimiento y cierre de caja usan `formOptions`, `withForm`,
+  `AppField` y `AppForm` sobre la misma composición;
 - `withFieldGroup` está disponible, pero no se usa artificialmente sin un grupo reutilizable.
 
 Campos registrados:
@@ -412,6 +433,39 @@ desalineación del último movimiento. Informa IDs y causa, pero nunca repara au
 protección común de cambios sin guardar. En escritorio usa tabla/Sheet lateral; en móvil,
 tarjetas/Sheet de pantalla completa.
 
+## Caja implementada
+
+El módulo `cash` posee `CashSession`, `CashMovement`, las reglas de efectivo y errores de caja.
+Expone cuatro comandos públicos:
+
+- `openCashSession`;
+- `registerCashDeposit`;
+- `registerCashWithdrawal`;
+- `closeCashSession`.
+
+`CashUnitOfWork` delimita escrituras y `CashQueries` ofrece estado global, sesión abierta,
+resumen, historial de sesiones y movimientos. `DexieCashUnitOfWork` relee las invariantes dentro
+de la transacción. Apertura y movimientos escriben `cashSessions`/`cashMovements`; retiro y cierre
+también incluyen `sales` y `salePayments` para recalcular el efectivo definitivo sin escribir en
+esas tablas. Los errores abortan toda la transacción y las aperturas concurrentes se serializan.
+
+El cierre guarda cantidad y total de ventas, totales por método, depósitos, retiros, esperado,
+contado y diferencia. Las sesiones migradas desde v2 conservan su cuadre y muestran el desglose
+como no disponible cuando el snapshot es `null`.
+
+Los hooks de caja usan `useLiveQuery` y etiquetan el resultado por sesión para no reutilizar un
+valor reactivo de una consulta anterior. El indicador global del App Shell reacciona a cambios
+entre pestañas.
+
+`/cash` usa search params `tab`, `panel`, `sessionId`, `page` y `pageSize`. Apertura y movimientos
+usan Dialog en escritorio y Drawer en móvil; el arqueo y el detalle histórico usan Sheet. Los
+formularios impiden doble envío, muestran vistas previas y protegen cambios sin guardar. El
+detalle soporta recarga, navegación atrás y sesiones inexistentes sin romper la página.
+
+El diagnóstico profundo `cash-integrity` detecta sesiones y movimientos inválidos, temporalidad
+incorrecta, datos de cierre incompletos, diferencias erróneas, snapshots ausentes o
+inconsistentes y una ecuación de efectivo esperado rota. Solo informa; nunca repara datos.
+
 ## Stack y herramientas
 
 | Responsabilidad | Tecnología |
@@ -454,22 +508,22 @@ pnpm check:full       # check + E2E
 Antes de editar código relacionado con TanStack, revisar `AGENTS.md` y ejecutar el comando de
 TanStack Intent que coincida con el cambio.
 
-## Calidad verificada durante el cierre de Fase 3
+## Calidad verificada durante el cierre de Fase 4
 
 Línea base completa ejecutada al cerrar la fase:
 
-- `pnpm format:check`: 178 archivos correctos;
-- `pnpm lint`: 178 archivos sin errores;
+- `pnpm format:check`: 224 archivos correctos;
+- `pnpm lint`: 224 archivos sin errores;
 - `pnpm typecheck`: correcto;
-- `pnpm test`: 22 archivos y 200 pruebas aprobadas;
+- `pnpm test`: 28 archivos y 238 pruebas aprobadas;
 - `pnpm build`: cliente, SSR y Nitro correctos;
-- `pnpm test:e2e`: 38 escenarios aprobados en escritorio y móvil.
+- `pnpm test:e2e`: 40 escenarios aprobados en escritorio y móvil.
 
-La suite incluye dominio, consultas, rollback, concurrencia, migración v1→v2, diagnóstico,
-componentes, arquitectura y los recorridos Playwright de inventario.
+La suite incluye dominio, formularios, consultas, rollback, concurrencia, migraciones v1→v2→v3,
+diagnóstico, componentes, arquitectura y recorridos Playwright completos de inventario y caja.
 
-El build emitió una advertencia no bloqueante porque el chunk principal del cliente ronda 931 kB
-minificado. Es una oportunidad futura de code splitting, no un fallo funcional de Fase 2.
+El build emitió una advertencia no bloqueante porque el chunk principal del cliente ronda 1 MB
+minificado. Es una oportunidad futura de code splitting, no un fallo funcional de Fase 4.
 
 ## Convenciones que deben preservarse
 
@@ -481,28 +535,32 @@ minificado. Es una oportunidad futura de code splitting, no un fallo funcional d
 - Unitarias junto al archivo; E2E en `e2e/`; arquitectura en `src/test/architecture/`.
 - Una operación crítica que afecta varias tablas usa una única transacción Dexie.
 - No esperar red, temporizadores o UI dentro de una transacción.
-- No modificar los esquemas v1 o v2; crear una versión nueva si cambia la estructura.
+- No modificar los esquemas v1, v2 o v3; crear una versión nueva si cambia la estructura.
 - No introducir campos especulativos de sincronización.
 - No usar importes de coma flotante ni editar stock silenciosamente.
 - Actualizar documentación y pruebas cuando cambia una invariante.
 
 ## Próxima fase autorizada
 
-### Fase 4 — Caja, apertura y movimientos de efectivo
+### Fase 5 — Ventas, carrito y pagos
 
-No está iniciada. No asumir que los placeholders de `cash` constituyen funcionalidad.
+No está iniciada. Caja puede consultar las tablas preparadas de ventas y pagos, pero no existe
+todavía creación de ventas, carrito ni registro funcional de pagos.
 
 ## Documentación de referencia
 
 - Visión y supuestos: `docs/00-decisions-and-assumptions.md` y `docs/01-product-vision.md`.
 - Alcance del MVP: `docs/02-mvp-scope.md`.
 - Requisitos y reglas: `docs/04-functional-requirements.md` y `docs/05-business-rules.md`.
-- Dominio y persistencia: `docs/06-domain-model.md`, `docs/database-schema-v1.md`,
-  `docs/database/inventory-integrity.md` y `docs/local-database.md`.
+- Dominio y persistencia: `docs/06-domain-model.md`, `docs/database-schema-v3.md`,
+  `docs/database/inventory-integrity.md`, `docs/database/cash-integrity.md` y
+  `docs/local-database.md`.
 - Arquitectura: `docs/architecture.md`, `docs/08-application-architecture.md` y `docs/adr/`.
 - Catálogo: `docs/modules/catalog.md` y `docs/use-cases/catalog-use-cases.md`.
 - Inventario: `docs/modules/inventory.md`, `docs/use-cases/inventory-use-cases.md` y
   `docs/ui/inventory-ui.md`.
+- Caja: `docs/modules/cash.md`, `docs/use-cases/cash-use-cases.md`, `docs/ui/cash-ui.md` y
+  `docs/database/cash-session-snapshot.md`.
 - Formularios y UX: `docs/forms/form-composition.md`, `docs/ui/catalog-ui.md` y
   `docs/ui/overlay-strategy.md`.
 - Desarrollo y calidad: `docs/development.md`, `docs/conventions.md`, `docs/testing.md` y
