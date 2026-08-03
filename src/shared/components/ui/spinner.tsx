@@ -1,8 +1,8 @@
+import { cn } from "#/shared/lib/utils.ts";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { cn } from "#/shared/lib/utils.ts";
 
-function Spinner({ className, ...props }: React.ComponentProps<"svg">) {
+function Spinner({ className, strokeWidth: _sw, ...props }: React.ComponentProps<"svg">) {
 	return (
 		<HugeiconsIcon
 			icon={Loading03Icon}
