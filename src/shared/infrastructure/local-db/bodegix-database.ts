@@ -10,7 +10,7 @@ import type {
 	SalePaymentRecord,
 	SaleRecord,
 } from "./records";
-import { DATABASE_NAME, registerSchemaV1 } from "./schema";
+import { DATABASE_NAME, registerSchemaV1, registerSchemaV2 } from "./schema";
 
 export class BodegixDatabase extends Dexie {
 	categories!: EntityTable<CategoryRecord, "id">;
@@ -26,5 +26,6 @@ export class BodegixDatabase extends Dexie {
 	constructor(databaseName = DATABASE_NAME) {
 		super(databaseName);
 		registerSchemaV1(this);
+		registerSchemaV2(this);
 	}
 }

@@ -1,9 +1,10 @@
 import "fake-indexeddb/auto";
+import Dexie from "dexie";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BodegixDatabase } from "./bodegix-database";
 import { initializeLocalDatabase } from "./initialize-local-database";
 import { runDatabaseDiagnostics } from "./diagnostics";
-import { DATABASE_SCHEMA_VERSION, SCHEMA_V1 } from "./schema";
+import { DATABASE_SCHEMA_VERSION, registerSchemaV1, SCHEMA_V2 } from "./schema";
 
 let database: BodegixDatabase | undefined;
 
@@ -27,7 +28,7 @@ describe("Dexie e IndexedDB", () => {
 		await db.open();
 
 		expect(db.verno).toBe(DATABASE_SCHEMA_VERSION);
-		expect(db.tables.map(({ name }) => name).sort()).toEqual(Object.keys(SCHEMA_V1).sort());
+		expect(db.tables.map(({ name }) => name).sort()).toEqual(Object.keys(SCHEMA_V2).sort());
 		expect(db.categories.schema.indexes.map(({ name }) => name)).toEqual([
 			"normalizedName",
 			"isActive",
@@ -55,6 +56,8 @@ describe("Dexie e IndexedDB", () => {
 				"createdAt",
 				"[productId+createdAt]",
 				"[referenceType+referenceId]",
+				"[type+createdAt]",
+				"[productId+type+createdAt]",
 			],
 			sales: [
 				"saleNumber",
@@ -80,6 +83,51 @@ describe("Dexie e IndexedDB", () => {
 		for (const table of db.tables) {
 			expect(table.schema.indexes.map(({ name }) => name)).toEqual(expectedIndexes[table.name]);
 		}
+	});
+
+	it("migra una instalación v1 a v2 conservando productos y movimientos", async () => {
+		const databaseName = `bodegix-migration-${crypto.randomUUID()}`;
+		const legacy = new Dexie(databaseName);
+		registerSchemaV1(legacy);
+		await legacy.open();
+		await legacy.table("products").add({
+			id: "product-legacy",
+			barcode: null,
+			name: "Producto legado",
+			normalizedName: "producto legado",
+			categoryId: null,
+			salePriceCents: 100,
+			costPriceCents: null,
+			stockQuantity: 3,
+			minimumStockQuantity: 1,
+			isActive: true,
+			createdAt: 1,
+			updatedAt: 1,
+		});
+		await legacy.table("inventoryMovements").add({
+			id: "movement-legacy",
+			productId: "product-legacy",
+			type: "initial_stock",
+			quantityDelta: 3,
+			stockBefore: 0,
+			stockAfter: 3,
+			referenceType: "setup",
+			referenceId: null,
+			reason: null,
+			createdAt: 2,
+		});
+		legacy.close();
+
+		database = new BodegixDatabase(databaseName);
+		await database.open();
+		expect(database.verno).toBe(2);
+		expect(await database.products.get("product-legacy")).toMatchObject({ stockQuantity: 3 });
+		expect(await database.inventoryMovements.get("movement-legacy")).toMatchObject({
+			stockAfter: 3,
+		});
+		expect(database.inventoryMovements.schema.indexes.map(({ name }) => name)).toContain(
+			"[type+createdAt]",
+		);
 	});
 
 	it("crea appSettings/main y conserva installationId y nextSaleNumber", async () => {
@@ -211,6 +259,34 @@ describe("Dexie e IndexedDB", () => {
 		const report = await runDatabaseDiagnostics(db, "deep");
 		expect(report.status).toBe("warning");
 		expect(report.checks.find(({ id }) => id === "sale-items-references")?.status).toBe("warning");
+	});
+
+	it("detecta inconsistencias del ledger sin reparar datos", async () => {
+		const db = createTestDatabase();
+		await initializeLocalDatabase(db);
+		await db.products.add({
+			id: "product-1",
+			barcode: null,
+			name: "Producto",
+			normalizedName: "producto",
+			categoryId: null,
+			salePriceCents: 100,
+			costPriceCents: null,
+			stockQuantity: 5,
+			minimumStockQuantity: 1,
+			isActive: true,
+			createdAt: 1,
+			updatedAt: 1,
+		});
+
+		const report = await runDatabaseDiagnostics(db, "deep");
+		const inventoryCheck = report.checks.find(({ id }) => id === "inventory-ledger-integrity");
+		expect(report.status).toBe("fail");
+		expect(inventoryCheck).toMatchObject({
+			status: "fail",
+			details: { issueCount: 1 },
+		});
+		expect((await db.products.get("product-1"))?.stockQuantity).toBe(5);
 	});
 
 	it("puede importar el cliente sin acceder a IndexedDB", async () => {

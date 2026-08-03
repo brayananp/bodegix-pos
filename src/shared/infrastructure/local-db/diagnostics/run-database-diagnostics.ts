@@ -1,7 +1,7 @@
 import type { BodegixDatabase } from "../bodegix-database";
 import { LocalDatabaseError } from "../database-errors";
 import { appSettingsRecordSchema } from "../records";
-import { DATABASE_SCHEMA_VERSION, SCHEMA_V1 } from "../schema";
+import { DATABASE_SCHEMA_VERSION, SCHEMA_V2 } from "../schema";
 import type {
 	DatabaseDiagnosticCheck,
 	DatabaseDiagnosticReport,
@@ -26,19 +26,146 @@ function relationCheck(id: string, label: string, orphanCount: number): Database
 			};
 }
 
+interface InventoryIntegrityIssue {
+	severity: "error" | "warning";
+	productId: string;
+	movementId: string | null;
+	inconsistency: string;
+}
+
+async function inventoryLedgerCheck(database: BodegixDatabase): Promise<DatabaseDiagnosticCheck> {
+	const [products, movements] = await Promise.all([
+		database.products.toArray(),
+		database.inventoryMovements.toArray(),
+	]);
+	const productsById = new Map(products.map((product) => [product.id, product]));
+	const movementsByProduct = new Map<string, typeof movements>();
+	const issues: InventoryIntegrityIssue[] = [];
+
+	for (const movement of movements) {
+		if (!productsById.has(movement.productId)) {
+			issues.push({
+				severity: "error",
+				productId: movement.productId,
+				movementId: movement.id,
+				inconsistency: "El movimiento referencia un producto inexistente.",
+			});
+		}
+		const productMovements = movementsByProduct.get(movement.productId) ?? [];
+		productMovements.push(movement);
+		movementsByProduct.set(movement.productId, productMovements);
+
+		if (!Number.isSafeInteger(movement.quantityDelta) || movement.quantityDelta === 0) {
+			issues.push({
+				severity: "error",
+				productId: movement.productId,
+				movementId: movement.id,
+				inconsistency: "El delta debe ser un entero distinto de cero.",
+			});
+		}
+		if (
+			!Number.isSafeInteger(movement.stockBefore) ||
+			movement.stockBefore < 0 ||
+			!Number.isSafeInteger(movement.stockAfter) ||
+			movement.stockAfter < 0
+		) {
+			issues.push({
+				severity: "error",
+				productId: movement.productId,
+				movementId: movement.id,
+				inconsistency: "Los saldos deben ser enteros no negativos.",
+			});
+		}
+		if (movement.stockAfter !== movement.stockBefore + movement.quantityDelta) {
+			issues.push({
+				severity: "error",
+				productId: movement.productId,
+				movementId: movement.id,
+				inconsistency: "El saldo posterior no coincide con saldo anterior más delta.",
+			});
+		}
+		if (movement.type === "initial_stock" && movement.stockBefore !== 0) {
+			issues.push({
+				severity: "error",
+				productId: movement.productId,
+				movementId: movement.id,
+				inconsistency: "El stock inicial debe comenzar desde cero.",
+			});
+		}
+		const mustBePositive = ["initial_stock", "purchase", "adjustment_in", "sale_void"].includes(
+			movement.type,
+		);
+		const mustBeNegative = ["adjustment_out", "damaged", "expired", "sale"].includes(movement.type);
+		if (
+			(mustBePositive && movement.quantityDelta <= 0) ||
+			(mustBeNegative && movement.quantityDelta >= 0)
+		) {
+			issues.push({
+				severity: "error",
+				productId: movement.productId,
+				movementId: movement.id,
+				inconsistency: "El signo del delta no corresponde al tipo de movimiento.",
+			});
+		}
+	}
+
+	for (const product of products) {
+		const productMovements = movementsByProduct.get(product.id) ?? [];
+		if (productMovements.length === 0 && product.stockQuantity !== 0) {
+			issues.push({
+				severity: "error",
+				productId: product.id,
+				movementId: null,
+				inconsistency: "Un producto sin movimientos debe conservar stock cero.",
+			});
+			continue;
+		}
+		const initialMovements = productMovements.filter(({ type }) => type === "initial_stock");
+		if (initialMovements.length > 1) {
+			issues.push({
+				severity: "error",
+				productId: product.id,
+				movementId: initialMovements.at(-1)?.id ?? null,
+				inconsistency: "Existe más de un movimiento de stock inicial.",
+			});
+		}
+		const lastMovement = productMovements
+			.sort((left, right) => left.createdAt - right.createdAt || left.id.localeCompare(right.id))
+			.at(-1);
+		if (lastMovement && lastMovement.stockAfter !== product.stockQuantity) {
+			issues.push({
+				severity: "error",
+				productId: product.id,
+				movementId: lastMovement.id,
+				inconsistency: "El último saldo del ledger no coincide con el stock actual.",
+			});
+		}
+	}
+
+	return issues.length === 0
+		? {
+				id: "inventory-ledger-integrity",
+				status: "pass",
+				message: "El ledger de inventario es consistente con los productos.",
+			}
+		: {
+				id: "inventory-ledger-integrity",
+				status: "fail",
+				message: "Se encontraron inconsistencias en el ledger de inventario.",
+				details: { issueCount: issues.length, issues },
+			};
+}
+
 async function runDeepChecks(database: BodegixDatabase): Promise<DatabaseDiagnosticCheck[]> {
-	const [productIds, saleIds, cashSessionIds] = await Promise.all([
-		database.products.toCollection().primaryKeys(),
+	const [saleIds, cashSessionIds] = await Promise.all([
 		database.sales.toCollection().primaryKeys(),
 		database.cashSessions.toCollection().primaryKeys(),
 	]);
-	const products = new Set(productIds);
 	const sales = new Set(saleIds);
 	const cashSessions = new Set(cashSessionIds);
 
 	let orphanSaleItems = 0;
 	let orphanSalePayments = 0;
-	let orphanInventoryMovements = 0;
 	let orphanSales = 0;
 	let orphanCashMovements = 0;
 
@@ -48,9 +175,6 @@ async function runDeepChecks(database: BodegixDatabase): Promise<DatabaseDiagnos
 		}),
 		database.salePayments.each(({ saleId }) => {
 			if (!sales.has(saleId)) orphanSalePayments += 1;
-		}),
-		database.inventoryMovements.each(({ productId }) => {
-			if (!products.has(productId)) orphanInventoryMovements += 1;
 		}),
 		database.sales.each(({ cashSessionId }) => {
 			if (!cashSessions.has(cashSessionId)) orphanSales += 1;
@@ -63,11 +187,7 @@ async function runDeepChecks(database: BodegixDatabase): Promise<DatabaseDiagnos
 	return [
 		relationCheck("sale-items-references", "ítems de venta huérfanos", orphanSaleItems),
 		relationCheck("sale-payments-references", "pagos de venta huérfanos", orphanSalePayments),
-		relationCheck(
-			"inventory-movements-references",
-			"movimientos de inventario sin producto",
-			orphanInventoryMovements,
-		),
+		await inventoryLedgerCheck(database),
 		relationCheck("sales-references", "ventas sin sesión de caja", orphanSales),
 		relationCheck(
 			"cash-movements-references",
@@ -98,7 +218,7 @@ export async function runDatabaseDiagnostics(
 					},
 		);
 
-		const expectedTables = Object.keys(SCHEMA_V1).sort();
+		const expectedTables = Object.keys(SCHEMA_V2).sort();
 		const actualTables = database.tables.map(({ name }) => name).sort();
 		const missingTables = expectedTables.filter((name) => !actualTables.includes(name));
 		checks.push(
