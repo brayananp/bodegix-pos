@@ -1,0 +1,30 @@
+import Dexie, { type EntityTable } from "dexie";
+import type {
+	AppSettingsRecord,
+	CashMovementRecord,
+	CashSessionRecord,
+	CategoryRecord,
+	InventoryMovementRecord,
+	ProductRecord,
+	SaleItemRecord,
+	SalePaymentRecord,
+	SaleRecord,
+} from "./records";
+import { DATABASE_NAME, registerSchemaV1 } from "./schema";
+
+export class BodegixDatabase extends Dexie {
+	categories!: EntityTable<CategoryRecord, "id">;
+	products!: EntityTable<ProductRecord, "id">;
+	inventoryMovements!: EntityTable<InventoryMovementRecord, "id">;
+	sales!: EntityTable<SaleRecord, "id">;
+	saleItems!: EntityTable<SaleItemRecord, "id">;
+	salePayments!: EntityTable<SalePaymentRecord, "id">;
+	cashSessions!: EntityTable<CashSessionRecord, "id">;
+	cashMovements!: EntityTable<CashMovementRecord, "id">;
+	appSettings!: EntityTable<AppSettingsRecord, "id">;
+
+	constructor(databaseName = DATABASE_NAME) {
+		super(databaseName);
+		registerSchemaV1(this);
+	}
+}

@@ -1,0 +1,31 @@
+import { z } from "zod";
+import {
+	cashMovementTypeSchema,
+	cashSessionStatusSchema,
+	persistedIdSchema,
+	persistedNonNegativeIntegerSchema,
+	persistedTimestampSchema,
+} from "./persistence.schemas";
+
+export const cashSessionRecordSchema = z.object({
+	id: persistedIdSchema,
+	status: cashSessionStatusSchema,
+	openingCashCents: persistedNonNegativeIntegerSchema,
+	expectedCashCents: persistedNonNegativeIntegerSchema.nullable(),
+	countedCashCents: persistedNonNegativeIntegerSchema.nullable(),
+	differenceCents: z.number().int().nullable(),
+	openedAt: persistedTimestampSchema,
+	closedAt: persistedTimestampSchema.nullable(),
+});
+
+export const cashMovementRecordSchema = z.object({
+	id: persistedIdSchema,
+	cashSessionId: persistedIdSchema,
+	type: cashMovementTypeSchema,
+	amountCents: persistedNonNegativeIntegerSchema,
+	reason: z.string().trim().min(1),
+	createdAt: persistedTimestampSchema,
+});
+
+export type CashSessionRecord = z.infer<typeof cashSessionRecordSchema>;
+export type CashMovementRecord = z.infer<typeof cashMovementRecordSchema>;
