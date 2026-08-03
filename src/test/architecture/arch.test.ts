@@ -337,6 +337,85 @@ describe("Arquitectura — inventario", () => {
 	});
 });
 
+describe("Arquitectura — caja", () => {
+	const productionFiles = (directory: string) =>
+		collectFiles(directory).filter(
+			(file) => !file.endsWith(".test.ts") && !file.endsWith(".test.tsx"),
+		);
+
+	it("el dominio y la aplicación de caja permanecen puros", () => {
+		const files = [
+			...productionFiles(join(SRC, "modules/cash/domain")),
+			...productionFiles(join(SRC, "modules/cash/application")),
+		];
+		const violations = files.flatMap((file) =>
+			getImports(file)
+				.filter(
+					(moduleName) =>
+						moduleName === "react" ||
+						moduleName.startsWith("@tanstack/") ||
+						moduleName === "dexie" ||
+						moduleName === "dexie-react-hooks" ||
+						moduleName.includes("/ui"),
+				)
+				.map((moduleName) => `${relative(SRC, file)}: importa "${moduleName}"`),
+		);
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("componentes y formularios de caja no acceden a Dexie", () => {
+		const files = [
+			...productionFiles(join(SRC, "modules/cash/ui/components")),
+			...productionFiles(join(SRC, "modules/cash/ui/forms")),
+			...productionFiles(join(SRC, "modules/cash/ui/overlays")),
+		];
+		const violations = files.flatMap((file) =>
+			getImports(file)
+				.filter(
+					(moduleName) =>
+						moduleName === "dexie" ||
+						moduleName === "dexie-react-hooks" ||
+						moduleName.includes("local-db"),
+				)
+				.map((moduleName) => `${relative(SRC, file)}: importa "${moduleName}"`),
+		);
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("caja solo lee ventas y pagos", () => {
+		const violations: string[] = [];
+		for (const file of productionFiles(join(SRC, "modules/cash"))) {
+			const content = readFileSync(file, "utf-8");
+			if (
+				/\.(sales|salePayments)\.(?:add|bulkAdd|put|bulkPut|update|delete|bulkDelete|clear)\s*\(/.test(
+					content,
+				)
+			) {
+				violations.push(relative(SRC, file));
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("rutas y formularios compartidos no contienen lógica privada de caja", () => {
+		const violations: string[] = [];
+		for (const file of productionFiles(join(SRC, "routes"))) {
+			const content = readFileSync(file, "utf-8");
+			if (/calculateExpectedCash|cashSessions|cashMovements/.test(content)) {
+				violations.push(`${relative(SRC, file)} contiene lógica de caja`);
+			}
+		}
+		for (const file of productionFiles(join(SRC, "shared/ui/forms"))) {
+			for (const moduleName of getImports(file)) {
+				if (moduleName.includes("modules/cash")) {
+					violations.push(`${relative(SRC, file)}: importa "${moduleName}"`);
+				}
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+});
+
 describe("Arquitectura — dependencias entre módulos", () => {
 	it("no existen ciclos entre módulos", () => {
 		const modulesDir = join(SRC, "modules");

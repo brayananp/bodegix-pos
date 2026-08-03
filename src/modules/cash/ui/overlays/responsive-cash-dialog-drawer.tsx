@@ -1,0 +1,59 @@
+import type { ReactNode } from "react";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/shared/components/ui/dialog";
+import {
+	Drawer,
+	DrawerContent,
+	DrawerDescription,
+	DrawerHeader,
+	DrawerTitle,
+} from "@/shared/components/ui/drawer";
+import { useIsMobile } from "@/shared/hooks/use-mobile";
+
+export function ResponsiveCashDialogDrawer({
+	open,
+	onOpenChange,
+	title,
+	description,
+	children,
+}: {
+	open: boolean;
+	onOpenChange(open: boolean): void;
+	title: string;
+	description: string;
+	children: ReactNode;
+}) {
+	const isMobile = useIsMobile();
+	if (isMobile) {
+		return (
+			<Drawer open={open} onOpenChange={onOpenChange} showSwipeHandle>
+				<DrawerContent className="max-h-[92dvh]">
+					<DrawerHeader className="pb-3 text-left">
+						<DrawerTitle>{title}</DrawerTitle>
+						<DrawerDescription>{description}</DrawerDescription>
+					</DrawerHeader>
+					{children}
+				</DrawerContent>
+			</Drawer>
+		);
+	}
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent
+				showCloseButton={false}
+				className="flex max-h-[88dvh] flex-col gap-0 sm:max-w-lg"
+			>
+				<DialogHeader className="shrink-0 border-b pb-4">
+					<DialogTitle>{title}</DialogTitle>
+					<DialogDescription>{description}</DialogDescription>
+				</DialogHeader>
+				{children}
+			</DialogContent>
+		</Dialog>
+	);
+}

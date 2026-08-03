@@ -1,6 +1,7 @@
 import { Separator } from "@/shared/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { useOnlineStatus } from "@/shared/kernel/network/use-online-status";
+import { CashStatusIndicator } from "@/modules/cash";
 import { AppSidebar } from "./app-sidebar";
 import { BottomNav } from "./bottom-nav";
 
@@ -49,6 +50,7 @@ export function AppShell({ children, pageTitle }: AppShellProps) {
 
 					{/* Spacer */}
 					<div className="flex-1" />
+					<CashStatusIndicator />
 
 					{/* Badge offline — solo si está sin conexión */}
 					{!isOnline && (
