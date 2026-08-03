@@ -1,7 +1,7 @@
 import type { BodegixDatabase } from "../bodegix-database";
 import { LocalDatabaseError } from "../database-errors";
 import { appSettingsRecordSchema } from "../records";
-import { DATABASE_SCHEMA_VERSION, SCHEMA_V2 } from "../schema";
+import { DATABASE_SCHEMA_VERSION, SCHEMA_V3 } from "../schema";
 import type {
 	DatabaseDiagnosticCheck,
 	DatabaseDiagnosticReport,
@@ -31,6 +31,176 @@ interface InventoryIntegrityIssue {
 	productId: string;
 	movementId: string | null;
 	inconsistency: string;
+}
+
+interface CashIntegrityIssue {
+	severity: "error" | "warning";
+	sessionId: string;
+	movementId: string | null;
+	inconsistency: string;
+}
+
+async function cashIntegrityCheck(database: BodegixDatabase): Promise<DatabaseDiagnosticCheck> {
+	const [sessions, movements] = await Promise.all([
+		database.cashSessions.toArray(),
+		database.cashMovements.toArray(),
+	]);
+	const sessionsById = new Map(sessions.map((session) => [session.id, session]));
+	const issues: CashIntegrityIssue[] = [];
+	const snapshotFields = [
+		"completedSalesCount",
+		"totalSalesCents",
+		"cashSalesCents",
+		"yapeSalesCents",
+		"plinSalesCents",
+		"cardSalesCents",
+		"bankTransferSalesCents",
+		"manualDepositsCents",
+		"manualWithdrawalsCents",
+	] as const;
+
+	for (const movement of movements) {
+		const session = sessionsById.get(movement.cashSessionId);
+		if (!session) {
+			issues.push({
+				severity: "error",
+				sessionId: movement.cashSessionId,
+				movementId: movement.id,
+				inconsistency: "El movimiento referencia una sesión inexistente.",
+			});
+			continue;
+		}
+		if (!Number.isSafeInteger(movement.amountCents) || movement.amountCents <= 0) {
+			issues.push({
+				severity: "error",
+				sessionId: session.id,
+				movementId: movement.id,
+				inconsistency: "El importe del movimiento debe ser un entero positivo.",
+			});
+		}
+		const reasonLength = movement.reason.trim().length;
+		if (reasonLength < 3 || reasonLength > 160) {
+			issues.push({
+				severity: "error",
+				sessionId: session.id,
+				movementId: movement.id,
+				inconsistency: "El motivo del movimiento no es válido.",
+			});
+		}
+		if (movement.createdAt < session.openedAt) {
+			issues.push({
+				severity: "error",
+				sessionId: session.id,
+				movementId: movement.id,
+				inconsistency: "El movimiento es anterior a la apertura.",
+			});
+		}
+		if (session.closedAt !== null && movement.createdAt > session.closedAt) {
+			issues.push({
+				severity: "error",
+				sessionId: session.id,
+				movementId: movement.id,
+				inconsistency: "El movimiento es posterior al cierre.",
+			});
+		}
+	}
+
+	for (const session of sessions) {
+		const monetaryValues = [
+			session.openingCashCents,
+			session.expectedCashCents,
+			session.countedCashCents,
+			...snapshotFields.map((field) => session[field]),
+		].filter((value): value is number => value !== null);
+		if (monetaryValues.some((value) => !Number.isSafeInteger(value) || value < 0)) {
+			issues.push({
+				severity: "error",
+				sessionId: session.id,
+				movementId: null,
+				inconsistency: "La sesión contiene importes inválidos.",
+			});
+		}
+		if (session.status === "open") {
+			const hasClosingData =
+				session.closedAt !== null ||
+				session.expectedCashCents !== null ||
+				session.countedCashCents !== null ||
+				session.differenceCents !== null ||
+				snapshotFields.some((field) => session[field] !== null);
+			if (hasClosingData) {
+				issues.push({
+					severity: "error",
+					sessionId: session.id,
+					movementId: null,
+					inconsistency: "Una sesión abierta contiene datos de cierre.",
+				});
+			}
+			continue;
+		}
+		if (session.closedAt === null || session.closedAt < session.openedAt) {
+			issues.push({
+				severity: "error",
+				sessionId: session.id,
+				movementId: null,
+				inconsistency: "La fecha de cierre es inválida.",
+			});
+		}
+		if (
+			session.expectedCashCents === null ||
+			session.countedCashCents === null ||
+			session.differenceCents === null
+		) {
+			issues.push({
+				severity: "error",
+				sessionId: session.id,
+				movementId: null,
+				inconsistency: "La sesión cerrada no tiene el cuadre completo.",
+			});
+		} else if (session.differenceCents !== session.countedCashCents - session.expectedCashCents) {
+			issues.push({
+				severity: "error",
+				sessionId: session.id,
+				movementId: null,
+				inconsistency: "La diferencia no coincide con contado menos esperado.",
+			});
+		}
+		if (snapshotFields.some((field) => session[field] === null)) {
+			issues.push({
+				severity: "warning",
+				sessionId: session.id,
+				movementId: null,
+				inconsistency: "El desglose histórico no está disponible para esta sesión legada.",
+			});
+		} else {
+			const snapshotExpectedCashCents =
+				session.openingCashCents +
+				(session.cashSalesCents ?? 0) +
+				(session.manualDepositsCents ?? 0) -
+				(session.manualWithdrawalsCents ?? 0);
+			if (session.expectedCashCents !== snapshotExpectedCashCents) {
+				issues.push({
+					severity: "error",
+					sessionId: session.id,
+					movementId: null,
+					inconsistency: "El efectivo esperado no coincide con el snapshot del cierre.",
+				});
+			}
+		}
+	}
+
+	const hasErrors = issues.some(({ severity }) => severity === "error");
+	return issues.length === 0
+		? {
+				id: "cash-integrity",
+				status: "pass",
+				message: "Las sesiones y movimientos de caja son consistentes.",
+			}
+		: {
+				id: "cash-integrity",
+				status: hasErrors ? "fail" : "warning",
+				message: "Se encontraron inconsistencias en caja.",
+				details: { issueCount: issues.length, issues },
+			};
 }
 
 async function inventoryLedgerCheck(database: BodegixDatabase): Promise<DatabaseDiagnosticCheck> {
@@ -188,6 +358,7 @@ async function runDeepChecks(database: BodegixDatabase): Promise<DatabaseDiagnos
 		relationCheck("sale-items-references", "ítems de venta huérfanos", orphanSaleItems),
 		relationCheck("sale-payments-references", "pagos de venta huérfanos", orphanSalePayments),
 		await inventoryLedgerCheck(database),
+		await cashIntegrityCheck(database),
 		relationCheck("sales-references", "ventas sin sesión de caja", orphanSales),
 		relationCheck(
 			"cash-movements-references",
@@ -218,7 +389,7 @@ export async function runDatabaseDiagnostics(
 					},
 		);
 
-		const expectedTables = Object.keys(SCHEMA_V2).sort();
+		const expectedTables = Object.keys(SCHEMA_V3).sort();
 		const actualTables = database.tables.map(({ name }) => name).sort();
 		const missingTables = expectedTables.filter((name) => !actualTables.includes(name));
 		checks.push(

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { BodegixDatabase } from "./bodegix-database";
 import { initializeLocalDatabase } from "./initialize-local-database";
 import { runDatabaseDiagnostics } from "./diagnostics";
-import { DATABASE_SCHEMA_VERSION, registerSchemaV1, SCHEMA_V2 } from "./schema";
+import { DATABASE_SCHEMA_VERSION, registerSchemaV1, registerSchemaV2, SCHEMA_V3 } from "./schema";
 
 let database: BodegixDatabase | undefined;
 
@@ -28,7 +28,7 @@ describe("Dexie e IndexedDB", () => {
 		await db.open();
 
 		expect(db.verno).toBe(DATABASE_SCHEMA_VERSION);
-		expect(db.tables.map(({ name }) => name).sort()).toEqual(Object.keys(SCHEMA_V2).sort());
+		expect(db.tables.map(({ name }) => name).sort()).toEqual(Object.keys(SCHEMA_V3).sort());
 		expect(db.categories.schema.indexes.map(({ name }) => name)).toEqual([
 			"normalizedName",
 			"isActive",
@@ -120,7 +120,7 @@ describe("Dexie e IndexedDB", () => {
 
 		database = new BodegixDatabase(databaseName);
 		await database.open();
-		expect(database.verno).toBe(2);
+		expect(database.verno).toBe(3);
 		expect(await database.products.get("product-legacy")).toMatchObject({ stockQuantity: 3 });
 		expect(await database.inventoryMovements.get("movement-legacy")).toMatchObject({
 			stockAfter: 3,
@@ -128,6 +128,36 @@ describe("Dexie e IndexedDB", () => {
 		expect(database.inventoryMovements.schema.indexes.map(({ name }) => name)).toContain(
 			"[type+createdAt]",
 		);
+	});
+
+	it("migra sesiones v2 a v3 inicializando el snapshot sin inventar totales", async () => {
+		const databaseName = `bodegix-cash-migration-${crypto.randomUUID()}`;
+		const legacy = new Dexie(databaseName);
+		registerSchemaV1(legacy);
+		registerSchemaV2(legacy);
+		await legacy.open();
+		await legacy.table("cashSessions").add({
+			id: "legacy-cash",
+			status: "closed",
+			openingCashCents: 5_000,
+			expectedCashCents: 5_000,
+			countedCashCents: 4_900,
+			differenceCents: -100,
+			openedAt: 1,
+			closedAt: 2,
+		});
+		legacy.close();
+
+		database = new BodegixDatabase(databaseName);
+		await database.open();
+		expect(await database.cashSessions.get("legacy-cash")).toMatchObject({
+			expectedCashCents: 5_000,
+			countedCashCents: 4_900,
+			differenceCents: -100,
+			completedSalesCount: null,
+			cashSalesCents: null,
+			manualDepositsCents: null,
+		});
 	});
 
 	it("crea appSettings/main y conserva installationId y nextSaleNumber", async () => {
@@ -218,7 +248,7 @@ describe("Dexie e IndexedDB", () => {
 
 		expect(result.diagnostics.status).toBe("pass");
 		expect(deep.status).toBe("pass");
-		expect(deep.checks).toHaveLength(12);
+		expect(deep.checks).toHaveLength(13);
 	});
 
 	it("detecta configuración inválida sin repararla", async () => {
@@ -287,6 +317,115 @@ describe("Dexie e IndexedDB", () => {
 			details: { issueCount: 1 },
 		});
 		expect((await db.products.get("product-1"))?.stockQuantity).toBe(5);
+	});
+
+	it("detecta inconsistencias de caja sin reparar sesiones ni movimientos", async () => {
+		const db = createTestDatabase();
+		await initializeLocalDatabase(db);
+		await db.cashSessions.bulkAdd([
+			{
+				id: "cash-open-1",
+				status: "open",
+				openingCashCents: 100,
+				completedSalesCount: null,
+				totalSalesCents: null,
+				cashSalesCents: null,
+				yapeSalesCents: null,
+				plinSalesCents: null,
+				cardSalesCents: null,
+				bankTransferSalesCents: null,
+				manualDepositsCents: null,
+				manualWithdrawalsCents: null,
+				expectedCashCents: null,
+				countedCashCents: null,
+				differenceCents: null,
+				openedAt: 100,
+				closedAt: null,
+			},
+			{
+				id: "cash-open-2",
+				status: "open",
+				openingCashCents: 100,
+				completedSalesCount: null,
+				totalSalesCents: null,
+				cashSalesCents: null,
+				yapeSalesCents: null,
+				plinSalesCents: null,
+				cardSalesCents: null,
+				bankTransferSalesCents: null,
+				manualDepositsCents: null,
+				manualWithdrawalsCents: null,
+				expectedCashCents: null,
+				countedCashCents: null,
+				differenceCents: null,
+				openedAt: 101,
+				closedAt: null,
+			},
+			{
+				id: "cash-closed",
+				status: "closed",
+				openingCashCents: 100,
+				completedSalesCount: 0,
+				totalSalesCents: 0,
+				cashSalesCents: 0,
+				yapeSalesCents: 0,
+				plinSalesCents: 0,
+				cardSalesCents: 0,
+				bankTransferSalesCents: 0,
+				manualDepositsCents: 0,
+				manualWithdrawalsCents: 0,
+				expectedCashCents: 100,
+				countedCashCents: 90,
+				differenceCents: 10,
+				openedAt: 10,
+				closedAt: 20,
+			},
+			{
+				id: "cash-bad-snapshot",
+				status: "closed",
+				openingCashCents: 100,
+				completedSalesCount: 0,
+				totalSalesCents: 0,
+				cashSalesCents: 0,
+				yapeSalesCents: 0,
+				plinSalesCents: 0,
+				cardSalesCents: 0,
+				bankTransferSalesCents: 0,
+				manualDepositsCents: 0,
+				manualWithdrawalsCents: 0,
+				expectedCashCents: 200,
+				countedCashCents: 200,
+				differenceCents: 0,
+				openedAt: 10,
+				closedAt: 20,
+			},
+		]);
+		await db.cashMovements.add({
+			id: "late-movement",
+			cashSessionId: "cash-closed",
+			type: "withdrawal",
+			amountCents: 10,
+			reason: "Movimiento tardío",
+			createdAt: 30,
+		});
+
+		const report = await runDatabaseDiagnostics(db, "deep");
+		expect(report.checks.find(({ id }) => id === "single-open-cash-session")?.status).toBe(
+			"warning",
+		);
+		const cashIntegrity = report.checks.find(({ id }) => id === "cash-integrity");
+		expect(cashIntegrity).toMatchObject({ status: "fail" });
+		expect(cashIntegrity?.details).toEqual(
+			expect.objectContaining({
+				issues: expect.arrayContaining([
+					expect.objectContaining({
+						inconsistency: "El efectivo esperado no coincide con el snapshot del cierre.",
+					}),
+				]),
+			}),
+		);
+		expect((await db.cashSessions.get("cash-closed"))?.differenceCents).toBe(10);
+		expect(await db.cashMovements.count()).toBe(1);
 	});
 
 	it("puede importar el cliente sin acceder a IndexedDB", async () => {
