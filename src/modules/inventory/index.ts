@@ -3,11 +3,11 @@
  *
  * Responsabilidad: stock actual y movimientos de inventario.
  * - Stock por producto (stockQuantity)
- * - Ledger de movimientos: entradas, salidas, ajustes
+ * - Ledger inmutable de movimientos manuales
  * - Alertas de stock bajo
  *
- * Los movimientos de salida son generados por `sales` al completar una venta.
- * Este módulo no tiene autoridad sobre las ventas.
+ * En la Fase 3 no coordina ventas ni caja. Los tipos reservados para ventas
+ * permanecen en el modelo persistente, pero no son operaciones públicas.
  *
  * @module inventory
  */
@@ -15,3 +15,8 @@
 export const INVENTORY_MODULE = "inventory" as const;
 
 export type InventoryModuleId = typeof INVENTORY_MODULE;
+
+export * from "./application";
+export * from "./domain";
+export * from "./infrastructure";
+export * from "./ui";
