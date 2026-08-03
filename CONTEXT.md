@@ -1,0 +1,472 @@
+# Contexto de Bodegix POS
+
+> Documento vivo de incorporación, relevo y contexto para personas y agentes de desarrollo.
+> Última actualización: 2026-08-03. Estado cubierto: Fases 1 y 2 completadas; Fase 3 aún no iniciada.
+
+## Cómo usar este documento
+
+Este archivo explica rápidamente qué es el proyecto, qué está implementado, cuáles son sus
+límites y qué decisiones deben conservarse. No reemplaza las especificaciones, ADR ni el código.
+Cuando exista una diferencia, se debe contrastar en este orden:
+
+1. Código ejecutable y pruebas vigentes.
+2. ADR y documentos normativos de `docs/`.
+3. Este resumen de contexto.
+4. Comentarios históricos o planes antiguos.
+
+Actualizar este archivo al cerrar una fase, cambiar una decisión arquitectónica, modificar el
+modelo persistido o alterar los comandos oficiales de validación.
+
+## Resumen ejecutivo
+
+**Bodegix POS** es una aplicación web para bodegas pequeñas que busca cubrir catálogo,
+inventario, ventas, caja, reportes y respaldo con operación local-first. Una instalación
+representa una bodega y una caja operativa; el MVP no tiene cuentas, roles, sincronización ni
+servidor de negocio.
+
+La aplicación actual es una SPA de TanStack Start. Los datos se almacenan localmente en
+IndexedDB mediante Dexie. La Fase 1 dejó lista la infraestructura local y la Fase 2 implementó
+el catálogo funcional de productos y categorías. La siguiente fase acordada es inventario y
+movimientos de stock.
+
+## Estado actual
+
+### Fase 1 — Infraestructura local: completada
+
+- TanStack Start en modo SPA y React 19.
+- Navegación responsive con sidebar de escritorio y barra inferior móvil.
+- Base Dexie `bodegix-pos`, esquema inmutable versión 1 y apertura perezosa en cliente.
+- Bootstrap idempotente del singleton `appSettings/main`.
+- Diagnóstico básico y profundo de integridad.
+- Adaptador de `StorageManager` y panel técnico en Configuración.
+- Estados de inicialización, error seguro y reintento en `LocalDatabaseProvider`.
+- Pruebas con `fake-indexeddb` que no tocan la base real.
+
+### Fase 2 — Catálogo: completada
+
+En `/products` se puede:
+
+- crear, editar, buscar, listar, desactivar y reactivar categorías;
+- crear, editar, consultar, buscar, filtrar, ordenar, paginar, desactivar y reactivar productos;
+- buscar productos por nombre normalizado o código de barras;
+- visualizar categoría, precios, stock actual, stock mínimo y estado;
+- conservar filtros y contexto al abrir o cerrar paneles;
+- restaurar un detalle desde la URL y cerrarlo con el botón atrás.
+
+No existe eliminación física de productos o categorías. El stock es visible pero no editable
+desde catálogo.
+
+### Estado de los demás módulos
+
+| Módulo | Estado funcional |
+|---|---|
+| `catalog` | Implementado en Fase 2. |
+| `settings` | Infraestructura y diagnóstico local de Fase 1. No es configuración completa. |
+| `inventory` | Solo límite y registros persistentes preparados. Sin casos de uso ni UI funcional. |
+| `sales` | Solo límite del módulo y tablas preparadas. Sin carrito ni ventas. |
+| `cash` | Solo límite del módulo y tablas preparadas. Sin apertura o cierre funcional. |
+| `reporting` | Solo límite del módulo. Sin consultas de negocio reales. |
+| `backup` | Solo límite del módulo. Sin exportación, importación o restauración. |
+
+## Alcance y restricciones del MVP
+
+El MVP está pensado inicialmente para:
+
+- una sola bodega por instalación;
+- una sola caja operativa;
+- cantidades enteras;
+- moneda PEN y zona horaria inicial `America/Lima`;
+- pagos externos confirmados manualmente en fases futuras;
+- operación sin cuenta, login ni roles.
+
+Quedan fuera del MVP: sincronización, nube, multiusuario, multisucursal, SUNAT, procesamiento
+directo de tarjetas, integraciones automáticas con Yape/Plin, proveedores, órdenes de compra,
+fiado, lotes avanzados, cantidades fraccionadas y analítica avanzada.
+
+Aunque el objetivo del producto es una PWA instalable y completamente offline, el service
+worker, la instalación PWA y la validación de arranque sin red pertenecen a una fase posterior.
+Actualmente sí existe persistencia local, pero todavía no existe respaldo: borrar los datos del
+navegador o perder el dispositivo puede eliminar la única copia.
+
+## Arquitectura oficial
+
+Nombre técnico:
+
+```text
+Local-first modular monolith
+with vertical slices and lightweight ports & adapters
+```
+
+En español:
+
+```text
+Monolito modular local-first
++ vertical slices
++ puertos y adaptadores selectivos
++ separación pragmática de comandos y consultas
+```
+
+### Capas de una vertical slice
+
+```text
+src/modules/<modulo>/
+├── domain/          Entidades, invariantes y errores puros
+├── application/     Casos de uso de escritura, consultas y puertos
+├── infrastructure/ Adaptadores Dexie y detalles técnicos
+├── ui/              React, hooks, formularios y páginas del módulo
+└── index.ts         Única API pública del módulo
+```
+
+No se crean carpetas, puertos o modelos intermedios sin una necesidad real. No se usan
+repositorios CRUD genéricos ni una Clean Architecture ceremonial.
+
+### Reglas de dependencia
+
+- Dominio no importa React, TanStack, Dexie, IndexedDB ni APIs del navegador.
+- Aplicación no importa UI.
+- Rutas y componentes no manipulan tablas ni coordinan transacciones.
+- Las escrituras pasan por casos de uso explícitos.
+- Las lecturas pasan por query services especializados.
+- Dexie es un adaptador de infraestructura.
+- Los módulos externos consumen únicamente `src/modules/<modulo>/index.ts`.
+- `shared/infrastructure` no importa módulos, aplicación o UI.
+- El shared kernel contiene solo utilidades realmente compartidas.
+- TanStack Query no se utiliza: las lecturas locales reactivas usan Dexie.
+- No existe backend de negocio ni server functions para el dominio del MVP.
+
+Estas fronteras están protegidas por pruebas en `src/test/architecture/arch.test.ts`.
+
+## Estructura principal
+
+```text
+bodegix-pos/
+├── docs/                         Especificaciones, decisiones y guías
+├── e2e/                          Escenarios Playwright
+├── src/
+│   ├── app/                      Shell y composition root
+│   ├── modules/                  Vertical slices de negocio
+│   ├── routes/                   Rutas TanStack Router delgadas
+│   ├── shared/
+│   │   ├── components/           Componentes shadcn/ui
+│   │   ├── infrastructure/       Base local y adaptadores compartidos
+│   │   ├── kernel/               Dinero, IDs, fechas, texto y Result
+│   │   └── ui/forms/             Composición común de TanStack Form
+│   └── test/                     Setup y reglas arquitectónicas
+├── AGENTS.md                     Guías TanStack Intent para cambios relevantes
+├── package.json                  Scripts y dependencias
+└── CONTEXT.md                    Este mapa de situación
+```
+
+Los imports internos utilizan preferentemente el alias `@/`. El alias `#/` se conserva por
+compatibilidad, pero no es el recomendado.
+
+## Persistencia local
+
+- Nombre de la base: `bodegix-pos`.
+- Motor: Dexie 4 sobre IndexedDB.
+- Versión actual: `1`.
+- La versión 1 publicada es inmutable; cualquier cambio estructural futuro requiere una nueva
+  versión y una migración probada.
+- La base se crea y abre únicamente en el navegador mediante `getLocalDatabase()`.
+- Importar módulos durante SSR o generación del shell no abre IndexedDB.
+- Los valores ausentes se persisten como `null`, no como `undefined`.
+- El dinero se persiste como enteros en céntimos.
+- Los timestamps se persisten como epoch milliseconds UTC.
+- Los IDs se generan con `crypto.randomUUID()`.
+
+### Tablas del esquema v1
+
+| Tabla | Propietario | Uso actual |
+|---|---|---|
+| `categories` | catalog | Funcional. |
+| `products` | catalog | Funcional; contiene el stock materializado. |
+| `inventoryMovements` | inventory | Preparada, todavía sin flujo funcional. |
+| `sales` | sales | Preparada, todavía sin flujo funcional. |
+| `saleItems` | sales | Preparada, todavía sin flujo funcional. |
+| `salePayments` | sales | Preparada, todavía sin flujo funcional. |
+| `cashSessions` | cash | Preparada, todavía sin flujo funcional. |
+| `cashMovements` | cash | Preparada, todavía sin flujo funcional. |
+| `appSettings` | settings | Funcional para bootstrap y diagnóstico. |
+
+IndexedDB no ofrece foreign keys. Los casos de uso deben comprobar relaciones al escribir y los
+diagnósticos detectan relaciones huérfanas. Nunca se debe corregir o borrar silenciosamente un
+registro corrupto.
+
+## Dominio de catálogo implementado
+
+### Categoría
+
+```typescript
+interface Category {
+  id: string;
+  name: string;
+  normalizedName: string;
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+```
+
+Reglas vigentes:
+
+- nombre obligatorio de 2 a 60 caracteres;
+- espacios externos e internos normalizados;
+- unicidad global por `normalizedName`;
+- desactivación lógica, sin eliminación física;
+- `createdAt` se conserva y `updatedAt` cambia al editar;
+- una categoría inactiva no puede asignarse en una operación nueva;
+- los productos ya asociados conservan su relación histórica.
+
+### Producto
+
+```typescript
+interface Product {
+  id: string;
+  barcode: string | null;
+  name: string;
+  normalizedName: string;
+  categoryId: string | null;
+  salePriceCents: number;
+  costPriceCents: number | null;
+  stockQuantity: number;
+  minimumStockQuantity: number;
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+```
+
+Reglas vigentes:
+
+- nombre de 2 a 120 caracteres;
+- precio de venta entero en céntimos y mayor que cero;
+- costo nulo o entero no negativo;
+- código opcional, alfanumérico y tratado siempre como string;
+- los códigos conservan ceros iniciales;
+- el código es único entre productos activos y se vuelve a comprobar al reactivar;
+- categoría opcional, pero debe existir y estar activa para una asignación nueva;
+- stock inicial siempre `0`;
+- editar o cambiar estado conserva stock, fecha de creación y relaciones existentes;
+- stock mínimo entero no negativo;
+- desactivación lógica, sin eliminación física.
+
+Los fallos esperados se discriminan mediante `CatalogErrorCode`; la UI nunca decide el tipo de
+error comparando textos.
+
+## Casos de uso y consultas del catálogo
+
+Escrituras implementadas:
+
+- `createCategory`;
+- `updateCategory`;
+- `setCategoryActiveState`;
+- `createProduct`;
+- `updateProduct`;
+- `setProductActiveState`.
+
+Lecturas implementadas:
+
+- `getCategoryById`;
+- `listCategories`;
+- `getProductById`;
+- `searchProducts`.
+
+Los adaptadores repiten dentro de la transacción las invariantes susceptibles a carreras, como
+unicidad, existencia y categoría activa. `searchProducts` admite búsqueda, categoría, estado,
+orden y paginación de 25, 50 o 100 elementos.
+
+`useLiveQuery` aparece exclusivamente en hooks de consulta del catálogo. No se escriben datos,
+disparan toasts ni duplican resultados en otro store desde una consulta reactiva.
+
+## Formularios
+
+Existe una sola infraestructura de TanStack Form en `src/shared/ui/forms`:
+
+- `createFormHookContexts()` define `fieldContext` y `formContext` compartidos;
+- `createFormHook()` registra campos y componentes de formulario;
+- `useAppForm`, `withForm` y `withFieldGroup` son las APIs comunes;
+- `AppField` y `AppForm` evitan repetir el cableado de eventos, errores y accesibilidad;
+- `ProductFormFields` usa `withForm` para componer los campos del producto;
+- `withFieldGroup` está disponible, pero no se usa artificialmente sin un grupo reutilizable.
+
+Campos registrados:
+
+- `TextField`;
+- `MoneyField`;
+- `IntegerField`;
+- `BarcodeField`;
+- `SelectField`;
+- `FieldErrorInfo`.
+
+Componentes registrados:
+
+- `SubmitButton`;
+- `FormActions`;
+- `FormError`;
+- `DirtyStateIndicator`;
+- `UnsavedChangesGuard`.
+
+Los valores editables no son entidades de dominio. Dinero, cantidades e IDs opcionales se
+mantienen como strings mientras el usuario escribe. Los mapeadores puros limpian entradas,
+convierten vacíos a `null` y convierten dinero exactamente a céntimos sin
+`parseFloat(value) * 100`.
+
+Zod valida formato y submit; los casos de uso vuelven a validar las reglas de negocio. Los
+errores conocidos se asignan al campo adecuado y los fallos desconocidos aparecen como error
+general sin cerrar el formulario.
+
+## Navegación y UX del catálogo
+
+`/products` es la única ruta del catálogo en esta etapa. No existen rutas separadas para crear,
+editar o consultar un producto.
+
+La URL contiene search params Zod para:
+
+```text
+tab, q, status, categoryId, page, pageSize, sort,
+panel, productId, categoryEditId
+```
+
+Los valores predeterminados son pestaña productos, búsqueda vacía, estado activo, página 1,
+tamaño 25, orden por nombre ascendente y ningún panel abierto. Una búsqueda o filtro nuevo
+regresa a página 1. Los valores de formulario nunca se escriben en la URL.
+
+Superficies utilizadas:
+
+- producto create/detail/edit: un solo `ProductSheet`;
+- producto en escritorio: Sheet derecho de 640 px;
+- producto en móvil: Sheet de pantalla completa con cuerpo desplazable, footer fijo y safe area;
+- categoría en escritorio: `Dialog`;
+- categoría en móvil: `Drawer`;
+- desactivar, reactivar o descartar cambios: `AlertDialog`.
+
+No se permiten overlays anidados ni `window.confirm`. Detalle → edición cambia el modo del mismo
+Sheet. Abrir un panel crea historial; atrás lo cierra. Un cierre explícito conserva la lista y sus
+filtros.
+
+Los formularios bloquean navegación, atrás y `beforeunload` cuando
+`isDirty && !isSubmitting`. Tras guardar se limpia el estado dirty antes de cerrar.
+
+Una ruta independiente `/products/:productId` solo será apropiada cuando el producto acumule
+varias áreas propias, como general, inventario, ventas, compras, proveedores y auditoría.
+
+## Stack y herramientas
+
+| Responsabilidad | Tecnología |
+|---|---|
+| Framework | TanStack Start, SPA mode |
+| UI | React 19, Tailwind CSS 4, shadcn/ui sobre Base UI |
+| Lenguaje | TypeScript estricto |
+| Navegación | TanStack Router |
+| Formularios | TanStack Form |
+| Validación | Zod 4 |
+| Persistencia | Dexie 4 + IndexedDB |
+| Reactividad local | `dexie-react-hooks` |
+| Unitarias/componentes | Vitest + React Testing Library |
+| E2E | Playwright, Chromium desktop y Pixel 5 emulado |
+| Formato y lint | Biome |
+| Paquetes | pnpm 10 |
+
+El `package.json` contiene `pg` por herencia del scaffolding, pero no existe persistencia
+PostgreSQL ni backend funcional en el MVP actual.
+
+## Comandos de desarrollo
+
+Requisitos: Node.js 22 o superior y pnpm 10 o superior.
+
+```bash
+pnpm install
+pnpm dev              # desarrollo en http://localhost:3000
+pnpm generate-routes  # regenerar routeTree.gen.ts
+pnpm format           # aplicar formato
+pnpm format:check     # comprobar formato
+pnpm lint             # Biome
+pnpm typecheck        # TypeScript sin emitir
+pnpm test             # Vitest
+pnpm build            # cliente + SSR/Nitro
+pnpm test:e2e         # Playwright sobre build existente
+pnpm check            # formato + lint + tipos + unitarias + build
+pnpm check:full       # check + E2E
+```
+
+Antes de editar código relacionado con TanStack, revisar `AGENTS.md` y ejecutar el comando de
+TanStack Intent que coincida con el cambio.
+
+## Calidad verificada al cerrar Fase 2
+
+Última línea base completa ejecutada antes de este documento:
+
+- formato: 136 archivos sin diferencias;
+- lint: 136 archivos sin errores;
+- TypeScript: correcto;
+- Vitest: 16 archivos y 144 pruebas aprobadas;
+- build: cliente, SSR y Nitro correctos;
+- Playwright: 34 escenarios aprobados en escritorio y móvil;
+- `pnpm check:full`: correcto.
+
+El build emitió una advertencia no bloqueante porque el chunk principal del cliente ronda 931 kB
+minificado. Es una oportunidad futura de code splitting, no un fallo funcional de Fase 2.
+
+## Convenciones que deben preservarse
+
+- Archivos en `kebab-case`; componentes exportados en `PascalCase`.
+- Named exports, salvo excepciones impuestas por framework.
+- No usar `any`, `@ts-ignore`, enums ni casts innecesarios.
+- Usar `unknown` y narrowing para errores o entradas externas.
+- Respetar `noUncheckedIndexedAccess`.
+- Unitarias junto al archivo; E2E en `e2e/`; arquitectura en `src/test/architecture/`.
+- Una operación crítica que afecta varias tablas usa una única transacción Dexie.
+- No esperar red, temporizadores o UI dentro de una transacción.
+- No modificar el esquema v1; crear una versión nueva si cambia la estructura.
+- No introducir campos especulativos de sincronización.
+- No usar importes de coma flotante ni editar stock silenciosamente.
+- Actualizar documentación y pruebas cuando cambia una invariante.
+
+## Próxima fase autorizada
+
+### Fase 3 — Inventario y movimientos de stock
+
+Objetivo previsto:
+
+- implementar `InventoryMovement` como ledger de trazabilidad;
+- registrar stock inicial, entradas y ajustes manuales;
+- actualizar `Product.stockQuantity` y crear el movimiento en una sola transacción Dexie;
+- guardar `quantityDelta`, `stockBefore` y `stockAfter`;
+- exigir motivos en ajustes y pérdidas cuando corresponda;
+- consultar historial por producto y productos con stock bajo;
+- construir la UI de `/inventory`;
+- probar rollback completo cuando falle cualquier parte de la transacción.
+
+El esquema v1 ya contiene `inventoryMovements` y los tipos de registro necesarios. Antes de crear
+una migración se debe comprobar si la fase puede implementarse con la estructura existente.
+
+Fase 3 no autoriza implementar ventas, caja, pagos, respaldo, backend o sincronización. Las
+salidas por venta y sus anulaciones están modeladas para el futuro, pero su coordinación debe
+esperar al módulo de ventas.
+
+## Documentación de referencia
+
+- Visión y supuestos: `docs/00-decisions-and-assumptions.md` y `docs/01-product-vision.md`.
+- Alcance del MVP: `docs/02-mvp-scope.md`.
+- Requisitos y reglas: `docs/04-functional-requirements.md` y `docs/05-business-rules.md`.
+- Dominio y persistencia: `docs/06-domain-model.md`, `docs/database-schema-v1.md` y
+  `docs/local-database.md`.
+- Arquitectura: `docs/architecture.md`, `docs/08-application-architecture.md` y `docs/adr/`.
+- Catálogo: `docs/modules/catalog.md` y `docs/use-cases/catalog-use-cases.md`.
+- Formularios y UX: `docs/forms/form-composition.md`, `docs/ui/catalog-ui.md` y
+  `docs/ui/overlay-strategy.md`.
+- Desarrollo y calidad: `docs/development.md`, `docs/conventions.md`, `docs/testing.md` y
+  `docs/16-definition-of-done.md`.
+- Hoja de ruta vigente: `docs/15-implementation-roadmap.md`.
+
+## Checklist para continuar el proyecto
+
+Antes de comenzar una fase o cambio significativo:
+
+1. Leer este archivo, `AGENTS.md` y los documentos del módulo afectado.
+2. Inspeccionar el código y los tests actuales; no confiar solo en el roadmap.
+3. Ejecutar la línea base relevante antes de editar.
+4. Mantener el cambio dentro de una vertical slice y su API pública.
+5. Añadir pruebas de dominio, integración, arquitectura y E2E según el riesgo.
+6. Ejecutar `pnpm check:full` antes de declarar la fase completada.
+7. Actualizar este archivo si cambia el estado, alcance o una decisión transversal.
