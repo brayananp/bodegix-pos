@@ -1,7 +1,7 @@
 import type { BodegixDatabase } from "../bodegix-database";
 import { LocalDatabaseError } from "../database-errors";
 import { appSettingsRecordSchema } from "../records";
-import { DATABASE_SCHEMA_VERSION, SCHEMA_V3 } from "../schema";
+import { DATABASE_SCHEMA_VERSION, SCHEMA_V4 } from "../schema";
 import type {
 	DatabaseDiagnosticCheck,
 	DatabaseDiagnosticReport,
@@ -326,6 +326,160 @@ async function inventoryLedgerCheck(database: BodegixDatabase): Promise<Database
 			};
 }
 
+async function saleIntegrityCheck(database: BodegixDatabase): Promise<DatabaseDiagnosticCheck> {
+	const [sales, saleItems, salePayments, inventoryMovements, settings, draft] = await Promise.all([
+		database.sales.toArray(),
+		database.saleItems.toArray(),
+		database.salePayments.toArray(),
+		database.inventoryMovements.toArray(),
+		database.appSettings.get("main"),
+		database.saleDrafts.get("main"),
+	]);
+
+	const issues: Array<{ saleId: string | null; detail: string }> = [];
+	const saleIds = new Set(sales.map((s) => s.id));
+	const saleNumbers = new Set<number>();
+
+	for (const sale of sales) {
+		if (!Number.isInteger(sale.saleNumber) || sale.saleNumber <= 0) {
+			issues.push({ saleId: sale.id, detail: "saleNumber inválido." });
+		}
+		if (saleNumbers.has(sale.saleNumber)) {
+			issues.push({ saleId: sale.id, detail: "saleNumber duplicado." });
+		}
+		saleNumbers.add(sale.saleNumber);
+		if (sale.subtotalCents !== sale.totalCents) {
+			issues.push({ saleId: sale.id, detail: "subtotalCents !== totalCents." });
+		}
+		if (sale.status === "completed" && (sale.voidedAt !== null || sale.voidReason !== null)) {
+			issues.push({ saleId: sale.id, detail: "Venta completada con campos de anulación." });
+		}
+	}
+
+	const itemsBySale = new Map<string, typeof saleItems>();
+	for (const item of saleItems) {
+		if (!saleIds.has(item.saleId)) {
+			issues.push({ saleId: item.saleId, detail: "Ítem sin venta padre." });
+			continue;
+		}
+		const expected = item.unitPriceCents * item.quantity;
+		if (item.subtotalCents !== expected) {
+			issues.push({ saleId: item.saleId, detail: "Subtotal de ítem incorrecto." });
+		}
+		const group = itemsBySale.get(item.saleId) ?? [];
+		group.push(item);
+		itemsBySale.set(item.saleId, group);
+	}
+
+	const paymentsBySale = new Map<string, typeof salePayments>();
+	for (const payment of salePayments) {
+		if (!saleIds.has(payment.saleId)) {
+			issues.push({ saleId: payment.saleId, detail: "Pago sin venta padre." });
+			continue;
+		}
+		const group = paymentsBySale.get(payment.saleId) ?? [];
+		group.push(payment);
+		paymentsBySale.set(payment.saleId, group);
+
+		if (payment.method === "cash") {
+			if (payment.status !== "confirmed") {
+				issues.push({ saleId: payment.saleId, detail: "Pago en efectivo sin estado confirmado." });
+			}
+			if (payment.cashReceivedCents === null || payment.changeCents === null) {
+				issues.push({ saleId: payment.saleId, detail: "Pago en efectivo sin recibido o vuelto." });
+			} else if (payment.changeCents !== payment.cashReceivedCents - payment.amountCents) {
+				issues.push({ saleId: payment.saleId, detail: "Vuelto incorrecto en efectivo." });
+			}
+		} else if (
+			payment.cashReceivedCents !== null ||
+			payment.changeCents !== null ||
+			payment.status !== "manually_verified"
+		) {
+			issues.push({
+				saleId: payment.saleId,
+				detail: "Pago externo con datos de efectivo o sin verificación.",
+			});
+		}
+	}
+
+	for (const sale of sales) {
+		const items = itemsBySale.get(sale.id) ?? [];
+		const payments = paymentsBySale.get(sale.id) ?? [];
+		if (items.length === 0) issues.push({ saleId: sale.id, detail: "Venta sin ítems." });
+		if (payments.length === 0) issues.push({ saleId: sale.id, detail: "Venta sin pagos." });
+
+		const itemsTotal = items.reduce((acc, item) => acc + item.subtotalCents, 0);
+		if (itemsTotal !== sale.subtotalCents) {
+			issues.push({ saleId: sale.id, detail: "Suma de ítems no coincide con subtotal." });
+		}
+
+		const paymentsTotal = payments.reduce((acc, payment) => acc + payment.amountCents, 0);
+		if (paymentsTotal !== sale.totalCents) {
+			issues.push({ saleId: sale.id, detail: "Suma de pagos no coincide con total." });
+		}
+
+		const methods = payments.map((p) => p.method);
+		if (new Set(methods).size !== methods.length) {
+			issues.push({ saleId: sale.id, detail: "Métodos de pago duplicados." });
+		}
+
+		const saleMovements = inventoryMovements.filter(
+			(m) => m.referenceType === "sale" && m.referenceId === sale.id,
+		);
+		if (sale.status === "completed" && saleMovements.length !== items.length) {
+			issues.push({ saleId: sale.id, detail: "Faltan movimientos de inventario por venta." });
+		}
+		for (const movement of saleMovements) {
+			const item = items.find((i) => i.productId === movement.productId);
+			if (!item || movement.quantityDelta !== -item.quantity) {
+				issues.push({
+					saleId: sale.id,
+					detail: "Delta de movimiento no coincide con cantidad vendida.",
+				});
+			}
+		}
+	}
+
+	if (settings) {
+		const maxSaleNumber = sales.reduce((max, sale) => Math.max(max, sale.saleNumber), 0);
+		if (settings.nextSaleNumber <= maxSaleNumber) {
+			issues.push({
+				saleId: null,
+				detail: "nextSaleNumber no es mayor que el máximo correlativo confirmado.",
+			});
+		}
+	}
+
+	if (draft) {
+		const productIds = new Set<string>();
+		for (const item of draft.items) {
+			if (productIds.has(item.productId)) {
+				issues.push({ saleId: null, detail: "Borrador con productos duplicados." });
+			}
+			productIds.add(item.productId);
+			if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+				issues.push({ saleId: null, detail: "Borrador con cantidad inválida." });
+			}
+			if (!Number.isInteger(item.expectedUnitPriceCents) || item.expectedUnitPriceCents <= 0) {
+				issues.push({ saleId: null, detail: "Borrador con precio esperado inválido." });
+			}
+		}
+	}
+
+	return issues.length === 0
+		? {
+				id: "sales-integrity",
+				status: "pass",
+				message: "Las ventas, pagos e inventario son consistentes.",
+			}
+		: {
+				id: "sales-integrity",
+				status: "fail",
+				message: "Se encontraron inconsistencias en ventas.",
+				details: { issueCount: issues.length, issues },
+			};
+}
+
 async function runDeepChecks(database: BodegixDatabase): Promise<DatabaseDiagnosticCheck[]> {
 	const [saleIds, cashSessionIds] = await Promise.all([
 		database.sales.toCollection().primaryKeys(),
@@ -357,6 +511,7 @@ async function runDeepChecks(database: BodegixDatabase): Promise<DatabaseDiagnos
 	return [
 		relationCheck("sale-items-references", "ítems de venta huérfanos", orphanSaleItems),
 		relationCheck("sale-payments-references", "pagos de venta huérfanos", orphanSalePayments),
+		await saleIntegrityCheck(database),
 		await inventoryLedgerCheck(database),
 		await cashIntegrityCheck(database),
 		relationCheck("sales-references", "ventas sin sesión de caja", orphanSales),
@@ -389,7 +544,7 @@ export async function runDatabaseDiagnostics(
 					},
 		);
 
-		const expectedTables = Object.keys(SCHEMA_V3).sort();
+		const expectedTables = Object.keys(SCHEMA_V4).sort();
 		const actualTables = database.tables.map(({ name }) => name).sort();
 		const missingTables = expectedTables.filter((name) => !actualTables.includes(name));
 		checks.push(

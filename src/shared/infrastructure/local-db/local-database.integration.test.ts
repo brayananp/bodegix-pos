@@ -4,7 +4,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { BodegixDatabase } from "./bodegix-database";
 import { initializeLocalDatabase } from "./initialize-local-database";
 import { runDatabaseDiagnostics } from "./diagnostics";
-import { DATABASE_SCHEMA_VERSION, registerSchemaV1, registerSchemaV2, SCHEMA_V3 } from "./schema";
+import {
+	DATABASE_SCHEMA_VERSION,
+	registerSchemaV1,
+	registerSchemaV2,
+	registerSchemaV3,
+	SCHEMA_V4,
+} from "./schema";
 
 let database: BodegixDatabase | undefined;
 
@@ -28,7 +34,7 @@ describe("Dexie e IndexedDB", () => {
 		await db.open();
 
 		expect(db.verno).toBe(DATABASE_SCHEMA_VERSION);
-		expect(db.tables.map(({ name }) => name).sort()).toEqual(Object.keys(SCHEMA_V3).sort());
+		expect(db.tables.map(({ name }) => name).sort()).toEqual(Object.keys(SCHEMA_V4).sort());
 		expect(db.categories.schema.indexes.map(({ name }) => name)).toEqual([
 			"normalizedName",
 			"isActive",
@@ -79,6 +85,7 @@ describe("Dexie e IndexedDB", () => {
 			cashSessions: ["status", "openedAt", "closedAt"],
 			cashMovements: ["cashSessionId", "type", "createdAt", "[cashSessionId+createdAt]"],
 			appSettings: [],
+			saleDrafts: ["updatedAt"],
 		};
 		for (const table of db.tables) {
 			expect(table.schema.indexes.map(({ name }) => name)).toEqual(expectedIndexes[table.name]);
@@ -120,7 +127,7 @@ describe("Dexie e IndexedDB", () => {
 
 		database = new BodegixDatabase(databaseName);
 		await database.open();
-		expect(database.verno).toBe(3);
+		expect(database.verno).toBe(DATABASE_SCHEMA_VERSION);
 		expect(await database.products.get("product-legacy")).toMatchObject({ stockQuantity: 3 });
 		expect(await database.inventoryMovements.get("movement-legacy")).toMatchObject({
 			stockAfter: 3,
@@ -158,6 +165,37 @@ describe("Dexie e IndexedDB", () => {
 			cashSalesCents: null,
 			manualDepositsCents: null,
 		});
+	});
+
+	it("migra instalación v3 a v4 agregando saleDrafts sin datos de ejemplo", async () => {
+		const databaseName = `bodegix-sale-draft-migration-${crypto.randomUUID()}`;
+		const legacy = new Dexie(databaseName);
+		registerSchemaV1(legacy);
+		registerSchemaV2(legacy);
+		registerSchemaV3(legacy);
+		await legacy.open();
+		await legacy.table("products").add({
+			id: "product-v3",
+			barcode: null,
+			name: "Producto v3",
+			normalizedName: "producto v3",
+			categoryId: null,
+			salePriceCents: 500,
+			costPriceCents: null,
+			stockQuantity: 4,
+			minimumStockQuantity: 0,
+			isActive: true,
+			createdAt: 1,
+			updatedAt: 1,
+		});
+		legacy.close();
+
+		database = new BodegixDatabase(databaseName);
+		await database.open();
+		expect(database.verno).toBe(DATABASE_SCHEMA_VERSION);
+		expect(database.saleDrafts.schema.indexes.map(({ name }) => name)).toEqual(["updatedAt"]);
+		expect(await database.saleDrafts.count()).toBe(0);
+		expect(await database.products.get("product-v3")).toMatchObject({ stockQuantity: 4 });
 	});
 
 	it("crea appSettings/main y conserva installationId y nextSaleNumber", async () => {
@@ -248,7 +286,7 @@ describe("Dexie e IndexedDB", () => {
 
 		expect(result.diagnostics.status).toBe("pass");
 		expect(deep.status).toBe("pass");
-		expect(deep.checks).toHaveLength(13);
+		expect(deep.checks).toHaveLength(14);
 	});
 
 	it("detecta configuración inválida sin repararla", async () => {
@@ -287,8 +325,9 @@ describe("Dexie e IndexedDB", () => {
 		});
 
 		const report = await runDatabaseDiagnostics(db, "deep");
-		expect(report.status).toBe("warning");
+		expect(report.status).toBe("fail");
 		expect(report.checks.find(({ id }) => id === "sale-items-references")?.status).toBe("warning");
+		expect(report.checks.find(({ id }) => id === "sales-integrity")?.status).toBe("fail");
 	});
 
 	it("detecta inconsistencias del ledger sin reparar datos", async () => {
