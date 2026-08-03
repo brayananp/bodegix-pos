@@ -1,162 +1,203 @@
 # 14. Estrategia de pruebas
 
-## Pirámide
-
-### Unitarias
-
-Herramientas previstas:
-
-- Vitest.
-- Funciones puras del dominio.
-
-Cubrir:
-
-- dinero;
-- totales;
-- vuelto;
-- pago mixto;
-- stock;
-- cierre de caja;
-- límites diarios;
-- normalización;
-- validación.
-
-### Integración
-
-- Dexie con IndexedDB de prueba.
-- Transacciones.
-- Migraciones.
-- Venta completa.
-- Anulación.
-- Caja.
-- Respaldo.
-
-### Componentes
-
-- React Testing Library.
-- Carrito.
-- Modal de pago.
-- Formularios.
-- Estados de error.
-
-### E2E
-
-- Playwright.
-- Flujo completo.
-- Operación offline.
-- Instalación cuando sea automatizable.
-- Restauración.
-- Actualización.
-
-## Casos críticos
-
-### TC-SAL-001 Venta en efectivo
-
-Dado un producto con stock 10  
-Cuando vendo 2 unidades por S/20  
-Entonces:
-
-- venta completada;
-- pago confirmado;
-- stock 8;
-- movimiento -2;
-- caja aumenta S/20.
-
-### TC-SAL-002 Stock insuficiente
-
-Dado stock 1  
-Cuando intento vender 2  
-Entonces no se crea ningún registro parcial.
-
-### TC-SAL-003 Pago mixto
-
-Dado total S/50  
-Cuando registro S/20 efectivo y S/30 Yape  
-Entonces la venta se completa y solo S/20 afectan caja física.
-
-### TC-SAL-004 Pago incompleto
-
-Dado total S/50  
-Cuando pagos suman S/49  
-Entonces no se confirma.
-
-### TC-SAL-005 Anulación
-
-Dada venta de 2 unidades  
-Cuando se anula  
-Entonces:
-
-- venta `voided`;
-- stock restaurado;
-- movimiento inverso;
-- pago `voided`;
-- totales netos actualizados.
-
-### TC-CSH-001 Doble apertura
-
-Dada una caja abierta  
-Cuando intento abrir otra  
-Entonces se rechaza.
-
-### TC-CSH-002 Cierre
-
-Dado:
-
-- inicial S/100;
-- ventas efectivo S/50;
-- retiro S/20;
-- contado S/128;
-
-Entonces:
-
-- esperado S/130;
-- diferencia -S/2.
-
-### TC-BCK-001 Restauración
-
-Dado un respaldo válido  
-Cuando se restaura  
-Entonces los conteos e invariantes coinciden.
-
-## Pruebas de migración
-
-Mantener fixtures:
+## 1. Pirámide de pruebas de Bodegix POS
 
 ```text
-test/fixtures/db-v1/
-test/fixtures/db-v2/
+          ┌─────────────────────────────────┐
+          │   E2E Playwright offline        │  < 10%
+          │   · flujos completos            │
+          │   · backup/restore real         │
+          │   · modo avión / reconexión     │
+          ├─────────────────────────────────┤
+          │   Componentes / integraciones   │  ~ 25%
+          │   · UI + hook + casos de uso   │
+          │   · con fake-indexeddb          │
+          ├─────────────────────────────────┤
+          │   Casos de uso / aplicación     │  ~ 25%
+          │   · completeSale, voidSale…     │
+          │   · transacciones Dexie         │
+          ├─────────────────────────────────┤
+          │   Dominio puro                  │  ~ 30%
+          │   · invariantes, dinero, ids    │
+          │   · 0 dependencias externas     │
+          ├─────────────────────────────────┤
+          │   Arquitectónicas (lint/test)   │  ~ 10%
+          │   · límites imports             │
+          │   · dominio sin React/Dexie     │
+          │   · DB no en rutas              │
+          └─────────────────────────────────┘
 ```
 
-Cada versión futura debe probar:
+## 2. Stack
 
-- apertura limpia;
-- actualización desde versión anterior;
-- conservación de ventas;
-- conservación de stock;
-- diagnóstico final.
+| Capa | Herramientas |
+|---|---|
+| Unitarias dominio + aplicación | **Vitest** |
+| IndexedDB en tests | `fake-indexeddb` / equivalente |
+| Componentes React | Vitest + Testing Library (o sólo tests de integración simples) |
+| Migraciones Dexie | Vitest + fixtures por versión `test/fixtures/db-vN/` |
+| E2E | **Playwright** + modo offline + storage persistente |
+| Arquitectónicas | Reglas ESLint (`no-restricted-imports`) o tests Vitest con AST imports |
 
-## Pruebas manuales en dispositivos
+## 3. Categorías de prueba
 
-Mínimo:
+### A. Pruebas de DOMINIO
 
-- Android gama media.
-- Android con almacenamiento limitado.
-- Escritorio Chromium.
-- modo avión;
-- cierre forzado;
-- actualización;
-- pérdida de foco;
-- batería baja;
-- orientación vertical y horizontal.
+Ubicación sugerida: `modules/X/domain/__tests__/` o `test/unit/domain/*`.
 
-## Criterio de bloqueo
+Características:
+- **SIN** `fake-indexeddb`
+- **SIN** React
+- **SIN** Dexie
+- **SIN** TanStack
 
-No se libera si falla:
+Ejemplos que deben existir:
+- `money.test.ts`: parse/format/calculateChange / céntimos enteros negativos → error
+- `ids.test.ts`: UUID válido; `newId()` idempotente de formato
+- `sale.test.ts`: carrito vacío → `EmptySaleError`; pagos suman 99% de total → `PAYMENT_TOTAL_MISMATCH`; `status` completed → no se muta
+- `sale-payment.test.ts`: efectivo sin `cashReceivedCents` → error
+- `cash-session.test.ts`: sólo 1 caja abierta a la vez (invariante dominio simple)
 
-- atomicidad;
-- cálculo monetario;
-- stock;
-- cierre;
-- restauración;
-- migración;
-- arranque offline.
+### B. Pruebas de CASOS DE USO / aplicación
+
+Ubicación: `modules/X/application/__tests__/`.
+
+Características:
+- Con `fake-indexeddb`.
+- Base Dexie recién inicializada por cada test o por suite.
+- Prueba el caso de uso llamando directamente a la función exportada (`completeSale(command)`).
+- Prueba **transaccionalidad**: fallo en paso 10 → no hay side effects (sale no creada, stock no descontado, correlativo no incrementado).
+
+Casos mínimo obligatorios:
+- `complete-sale.test.ts`:
+  - happy path: carrito 2 productos + 1 pago efectivo → venta creada, stock decrementado, correlativo++, inventoryMovements con stockAfter correctos
+  - fallo: caja no abierta → `NO_OPEN_CASH_SESSION`, nada persistido
+  - fallo: producto inactivo → error, nada persistido
+  - fallo: stock insuficiente → `INSUFFICIENT_STOCK`, nada persistido
+  - fallo: pagos no suman → error, nada persistido
+- `void-sale.test.ts`:
+  - happy path: venta completada → anulada, stock recuperado, movimientos `sale_void`, pagos → `voided`, registro no borrado
+  - doble anulación → `SALE_ALREADY_VOIDED`, nada cambia
+- `open-close-cash-session.test.ts`:
+  - 2 aperturas seguidas → error
+  - cierre calcula `expectedCash` correctamente
+- `initial-stock + inventory-adjustment.test.ts`
+- `restore-backup.test.ts`: checksum malo → error, schema malo → error, bueno → estado reemplazado + pre-backup automático generado
+
+### C. Pruebas de INFRAESTRUCTURA DEXIE
+
+Ubicación: `modules/X/infrastructure/__tests__/` y `shared/infrastructure/db/__tests__/`.
+
+- `migrations.test.ts`: cargar fixture v1 → upgrade a v2 → correr integridad → OK
+- `integrity-check.test.ts`: estado bueno → 0 errores; forzar stock desalineado → fallo reportado
+- `queries.test.ts`: `searchProducts("coca")` devuelve resultados ordenados relevantes
+
+### D. Pruebas de MIGRACIONES
+
+Regla: cada versión nueva de esquema crea 2 tests:
+1. `migrate vN-1 → vN`
+2. `integrity OK tras migrate`
+
+Fixtures en:
+```text
+src/test/fixtures/
+  └── db-v1/
+        ├── v1-data.json        （representación serializable de la base）
+        └── expected-v2-snapshot.json  (opcional)
+```
+
+### E. Pruebas de COMPONENTES / UI
+
+Objetivo: casos críticos + accesibilidad básica. No testear cada botón.
+
+- `sale-form.test.tsx`: pagos mixtos renderiza métodos seleccionados; `changeCents` se muestra correctamente; stock insuficiente muestra mensaje claro
+- `cash-opening.test.tsx`: valores no numéricos bloquean submit
+- `backup-restore.test.tsx`: upload de archivo inválido → toast de error
+
+### F. Pruebas END-TO-END (Playwright)
+
+Ubicación: `e2e/` o `tests/e2e/`.
+
+**Suite crítica mínima**:
+1. `onboarding-and-first-sale.spec.ts`
+   - onboarding completo → crear 2 productos → abrir caja → venta 2 items + efectivo → cierre → resumen correcto
+2. `void-sale.spec.ts`
+   - Vender → Anular → Verificar stock recuperado, pago anulado, listado de ventas muestra VOID
+3. `payments.spec.ts` (cash / yape manual / mixto cash+card)
+4. `inventory-adjustment.spec.ts`
+5. `cash-full-cycle.spec.ts`: apertura → deposito → retiro → cierre con diferencia
+6. `backup-restore.spec.ts`:
+   - Exportar → descargar → limpiar storage → subir → datos recuperados
+7. `offline.spec.ts`:
+   - PWA cargada → `context.setOffline(true)` → seguir vendiendo → re-online → no hay pérdida (también modo avión del navegador real si es posible)
+
+#### Fixtures de Playwright
+
+- `storage/` con una base Dexie pre-cargada (ventas del dia, caja abierta, productos) para tests de escenarios reales (no empezar siempre de 0).
+
+### G. Pruebas OFFLINE
+
+- UI no rompe en modo avión;
+- después de una limpieza forzada de service worker (en test), al volver online recarga datos correctamente;
+- los mensajes de error en storage cuota llena muestran acciones claras (libera espacio / exporta backup).
+
+### H. Pruebas ARQUITECTÓNICAS
+
+Nuevo bloque OBLIGATORIO, mínimo 5 tests:
+
+| ID | Test | Cómo implementar |
+|---|---|---|
+| ARCH-01 | Dominio NO importa React | ESLint `no-restricted-imports` sobre paths `modules/*/domain/**` que bloqueen `react` o AST scan de imports |
+| ARCH-02 | Dominio NO importa Dexie | Bloquear `dexie`, `idb`, `indexeddb` en domain |
+| ARCH-03 | Módulo Y no importa archivos PRIVADOS de módulo X (sólo `/index`) | Regla ESLint con regex: `^@/modules/(?!(catalog|sales|inventory|cash|reporting|backup|settings)/index$)[a-z]+/(?!index).+$` |
+| ARCH-04 | `routes/**` y `app/**` NO importan directamente `dexie`, ni `db.*` | Regla de imports negada |
+| ARCH-05 | Componentes `modules/*/ui/**` NO llaman a métodos escritura multi-tabla de `db.*` (`transaction`, `.add` sobre `sales`, `.bulkAdd` sobre `saleItems`, `.update` sobre `products.stockQuantity`) | AST scan o ESLint con nombres prohibidos en esos directorios |
+| ARCH-06 | Rutas no contienen lógica de dominio: no cálculo de totales, no validación de pagos | (humano + lint de patterns) |
+
+Conveniencia: si `@tanstack/eslint-plugin` / ESLint `no-restricted-imports` alcanza, usar ese y no test runtime. Si no, script `vitest` que recorra `imports` con `ts-morph` o similar.
+
+## 4. Cobertura mínima (meta pragmática)
+
+- Dominio: **≥ 80%** líneas y ≥ 95% branches en invariantes.
+- Casos de uso críticos (completeSale, voidSale, open/closeCash, restoreBackup): **≥ 90%** branches (incluidos paths de fallo transaccional).
+- UI: cobertura por paths críticos, no por porcentaje de líneas.
+- Playwright: al menos 7 specs del listado anterior pasando antes de release.
+
+## 5. Test data builders
+
+Ubicación: `src/test/builders/`.
+
+```typescript
+buildProduct(overrides?)       // → Product
+buildSaleItem(overrides?)
+buildCashSessionOpen()
+buildCompleteSaleCommand({ itemsCount: 2, payments: "cash_only" })
+```
+
+No hacer mocks de entero a mano. Preferir builders con defaults razonables + overrides.
+
+## 6. Fixtures de base por versión
+
+`src/test/fixtures/db-v1/`: exportación JSON de cada tabla en la v1. Útil para migraciones y escenarios E2E realistas.
+
+## 7. Pruebas que NO hacemos todavía
+
+- Tests visuales snapshot pixel-perfect (cuestan mantenimiento en etapas iniciales).
+- Tests de concurrencia multi-pestaña. Útiles, pero más adelante.
+- Tests de performance de Dexie con 10k+ productos hasta que el piloto lo requiera.
+- Test de service worker update UI cuando exista la actualización automática concreta.
+
+## 8. Puerta de entrada a merge
+
+Sobre cada PR:
+```bash
+pnpm lint              # biome lint + format
+pnpm check             # biome + tsc strict
+pnpm test              # vitest (unitarias, applicación, arquitectónicas, migraciones)
+pnpm e2e:smoke         # playwright smoke suite (5 specs más estables)
+```
+
+Sobre releases / tags:
+```bash
+pnpm e2e:full          # playwright full suite
+```

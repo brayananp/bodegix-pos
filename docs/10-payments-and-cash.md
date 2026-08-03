@@ -1,5 +1,15 @@
 # 10. Pagos y caja
 
+## Límite de módulo
+
+> Los pagos NO son un módulo independiente en el MVP. Viven dentro de `modules/sales` (ref: [ADR-0011](file:///c:/Users/ALEXIS/PROYECTOS/productos/bodegix-pos/docs/adr/0011-payments-inside-sales.md)).
+
+- `Sale`, `SaleItem`, `SalePayment` pertenecen al agregado `Sale`.
+- La operación crítica que coordina venta + items + pagos + stock + correlativo es `completeSale`, en 1 transacción Dexie.
+- Caja es el módulo `cash` (sesiones de caja abiertas/cerradas y depósitos/retiros).
+
+La extracción a `modules/payments` se activa solamente cuando existan integraciones automáticas (pasarelas, webhooks, conciliación), no antes.
+
 ## Principio
 
 La aplicación registra y concilia pagos. En el MVP no procesa pagos externos.

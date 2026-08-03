@@ -1,5 +1,9 @@
 # 09. Estrategia offline y PWA
 
+## Contexto arquitectónico
+
+Esta estrategia es la base del **monolito modular local-first** del proyecto (ref: [ADR-0007](file:///c:/Users/ALEXIS/PROYECTOS/productos/bodegix-pos/docs/adr/0007-local-first-modular-monolith.md)). Todos los datos y reglas de negocio viven en cliente. No hay backend crítico. Las operaciones críticas (venta, anulación, apertura/cierre de caja) no dependen de la red.
+
 ## Objetivos
 
 - Abrir la aplicación sin conexión después de instalarla.
@@ -7,17 +11,20 @@
 - Evitar pérdida por una actualización inesperada.
 - Informar claramente el estado de conexión.
 - Mantener separadas la caché del shell y la base de datos.
+- Garantizar que Dexie (adaptador de infraestructura —ref: [ADR-0014](file:///c:/Users/ALEXIS/PROYECTOS/productos/bodegix-pos/docs/adr/0014-dexie-as-local-adapter.md)) sea el único punto de acceso a datos locales.
 
 ## Distribución de responsabilidades
 
-| Necesidad | Tecnología |
-|---|---|
-| Datos estructurados | IndexedDB mediante Dexie |
-| Recursos de aplicación | Cache Storage mediante service worker |
-| Instalación | Web App Manifest |
-| Actualización | Service worker con aviso al usuario |
-| Persistencia | StorageManager cuando esté disponible |
-| Respaldo | Archivo descargable e importable |
+| Necesidad | Tecnología | Lugar arquitectónico |
+|---|---|---|
+| Datos estructurados | IndexedDB mediante Dexie | `shared/infrastructure/db` |
+| Recursos de aplicación | Cache Storage mediante service worker | `app/pwa/` |
+| Instalación | Web App Manifest | `app/pwa/` |
+| Actualización | Service worker con aviso al usuario | `app/pwa/` |
+| Persistencia | StorageManager cuando esté disponible | `shared/infrastructure/storage` |
+| Respaldo | Archivo descargable e importable | `modules/backup` |
+| Shell UI offline | componente React | `app/layout` + `routes/*` |
+| Reglas de negocio | Dominio puro en módulos | `modules/*/domain` |
 
 ## Estrategia de caché
 
@@ -77,6 +84,19 @@ La interfaz mostrará:
 - uso aproximado;
 - cuota aproximada;
 - fecha del último respaldo.
+
+## Preparación para sincronización futura
+
+Ver detalles completos en [18-future-evolution.md](file:///c:/Users/ALEXIS/PROYECTOS/productos/bodegix-pos/docs/18-future-evolution.md).
+
+Hoy se preserva en el MVP:
+- UUID global por registro
+- `createdAt` / `updatedAt` UTC
+- Ventas completadas inmutables + anulaciones explícitas
+- Esquema versionado Dexie
+- Formato de backup versionado
+
+**Campos que NO se agregan todavía** (no hay infraestructura real que los use): `tenantId`, `branchId`, `userId`, `deviceId`, `syncStatus`, `serverVersion`, `deletedAt`.
 
 ## Estado offline
 
