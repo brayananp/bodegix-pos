@@ -56,6 +56,12 @@ Prueban flujos completos en navegador real (Chromium).
 
 Requiere build previo (el playwright.config.ts lo hace automáticamente).
 
+### 5. Integración Dexie
+
+Usa IndexedDB real simulado por `fake-indexeddb 6.2.5`, no mocks de Dexie. Cubre apertura,
+esquema/índices, bootstrap, unicidad, rollback y diagnósticos. Cada prueba crea
+`bodegix-test-<uuid>`, cierra y elimina la base; nunca toca `bodegix-pos`.
+
 ## Helpers de test
 
 ### `renderWithRouter`

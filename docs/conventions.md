@@ -88,6 +88,11 @@ import { type Product } from "@/modules/catalog";
 interface IProductRepository { ... }  // No si solo hay Dexie
 ```
 
+La instancia y las tablas de `shared/infrastructure/local-db` solo se consumen desde
+infraestructura o el composition root. `routes/**`, `shared/components/**`, dominio y application
+no importan `dexie`, `dexie-react-hooks` ni el cliente de base. `shared/infrastructure` nunca
+importa UI. Los módulos acceden a persistencia futura mediante adaptadores privados propios.
+
 ## Colocación de pruebas
 
 - Las pruebas unitarias y de componentes van **junto al archivo** que prueban.

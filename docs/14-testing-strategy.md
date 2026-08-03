@@ -1,5 +1,13 @@
 # 14. Estrategia de pruebas
 
+## Cobertura de infraestructura local (Fase 1)
+
+Vitest usa `fake-indexeddb` para probar el esquema Dexie sin tocar la base de producción. Las bases
+son aisladas por UUID y se cierran/eliminan en teardown. Hay pruebas de validación Zod,
+StorageManager, errores, bootstrap concurrente, índices únicos, rollback, diagnóstico, provider y
+panel. Playwright verifica inicialización, versión, diagnóstico y conservación de installationId
+tras recarga.
+
 ## 1. Pirámide de pruebas de Bodegix POS
 
 ```text

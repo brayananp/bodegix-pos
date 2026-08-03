@@ -42,6 +42,9 @@ Regla 7: Dexie = adaptador de INFRAESTRUCTURA (nunca dominio).
 Regla 8: React = adaptador de ENTRADA (nunca dominio).
 Regla 9: No crear repositorios/interfaces genéricos sin necesidad concreta.
 Regla 10: El shared kernel solo contiene utilidades usadas en múltiples módulos.
+Regla 11: Las rutas y componentes compartidos no importan Dexie ni la base local.
+Regla 12: shared/infrastructure no importa app, módulos ni UI.
+Regla 13: El composition root puede configurar el provider y ejecutar el bootstrap.
 ```
 
 ## Shared kernel
@@ -109,6 +112,10 @@ TanStack Start se configura en modo SPA (Single Page Application):
 - Shell generado estáticamente
 - Sin server functions de negocio
 - Sin loaders que dependan de servidor
+
+La base local no se instancia ni se abre al importar módulos. El shell estático muestra el fallback
+de inicialización y `LocalDatabaseProvider` inicia Dexie desde un efecto cliente. Ver
+[local-database.md](./local-database.md).
 
 Para despliegue, el servidor debe redirigir todas las rutas al `index.html`:
 - **Nginx:** `try_files $uri $uri/ /index.html;`

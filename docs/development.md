@@ -83,6 +83,18 @@ export type MiModuloId = typeof MI_MODULO;
 
 ## Convenciones
 
+## Transacciones Dexie
+
+- Usar `db.transaction("rw", ...)` e incluir todas las tablas afectadas.
+- No esperar `fetch`, APIs externas, temporizadores ni diálogos dentro de la transacción.
+- Un error que invalida la operación se relanza para forzar rollback.
+- Componentes y rutas no inician escrituras ni coordinan transacciones.
+- Cada prueba de integración usa un nombre de base único, la cierra y elimina al terminar.
+
+La política completa de versiones está en [database-migrations.md](./database-migrations.md).
+
+## Convenciones generales
+
 Ver [docs/conventions.md](./conventions.md) para el detalle completo.
 
 Resumen rápido:

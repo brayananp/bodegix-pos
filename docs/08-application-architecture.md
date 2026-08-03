@@ -1,5 +1,13 @@
 # 08. Arquitectura de la aplicación
 
+## Infraestructura local implementada en Fase 1
+
+`shared/infrastructure/local-db` contiene registros de persistencia, versiones Dexie, bootstrap,
+errores, StorageManager y diagnóstico. `app/providers/local-database-provider.tsx` es el
+composition root cliente. Las rutas solo importan APIs públicas de módulos; `/settings` no conoce
+la instancia ni las tablas. La separación pragmática comandos/consultas se aplicará al comenzar
+casos de uso comerciales en Fase 2.
+
 ## 1. Nombre formal de la arquitectura
 
 > **Bodegix POS** utiliza una arquitectura **local-first** y **offline-first** basada en un **monolito modular** organizado mediante **vertical slices** (funcionalidades verticales). Los módulos críticos aplican **puertos y adaptadores de forma selectiva** para mantener el dominio independiente de React, Dexie y futuras APIs. Las escrituras se implementan mediante **casos de uso transaccionales** y las lecturas mediante **consultas especializadas**.

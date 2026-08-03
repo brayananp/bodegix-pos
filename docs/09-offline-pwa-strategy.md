@@ -1,5 +1,12 @@
 # 09. Estrategia offline y PWA
 
+## Estado tras Fase 1
+
+IndexedDB ya es la fuente local y la base se abre exclusivamente después del montaje cliente. El
+panel permite consultar persistencia, uso y cuota estimados y solicitar `persist()` por acción
+explícita. Esto no implementa todavía service worker, caché offline del shell ni respaldo. Ver
+[storage-persistence.md](./storage-persistence.md).
+
 ## Contexto arquitectónico
 
 Esta estrategia es la base del **monolito modular local-first** del proyecto (ref: [ADR-0007](file:///c:/Users/ALEXIS/PROYECTOS/productos/bodegix-pos/docs/adr/0007-local-first-modular-monolith.md)). Todos los datos y reglas de negocio viven en cliente. No hay backend crítico. Las operaciones críticas (venta, anulación, apertura/cierre de caja) no dependen de la red.

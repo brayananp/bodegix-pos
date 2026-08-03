@@ -46,3 +46,14 @@ Opciones:
 - Riesgo: tentación de usar Dexie directamente desde componentes para prototipar rápido.
   - Mitigación: prueba arquitectónica que detecte imports de `dexie` en `modules/*/ui/**` y `routes/**`.
 - Acción: `runIntegrityCheck()` y migraciones en `shared/infrastructure/db`; cada módulo tiene sus propios `modules/X/infrastructure/dexie-*-queries.ts` y `*-uow.ts`.
+
+## Enmienda de implementación — Fase 1 (2026-08-03)
+
+- La ubicación final es `shared/infrastructure/local-db` y la clase se llama `BodegixDatabase`.
+- Producción mantiene un singleton perezoso; importarlo no abre IndexedDB durante el shell SPA.
+- Cada versión del esquema es un archivo inmutable. La v1 no tiene migración ficticia.
+- `appSettings/main` se crea mediante bootstrap transaccional e idempotente.
+- `navigator.storage.persist()` solo se solicita por acción explícita.
+- `localStorage` no se usa para datos de negocio ni configuración.
+- Diagnósticos básicos/profundos son de solo lectura; no borran ni reparan.
+- Respaldo, restauración y `dexie-export-import` permanecen fuera de Fase 1.

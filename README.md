@@ -14,9 +14,9 @@ Todo corre en el navegador. No necesita servidor, no necesita internet para func
 
 ## Estado del proyecto
 
-**Fase 0 — Base técnica y arquitectura** ✅
+**Fase 1 — Infraestructura local con Dexie e IndexedDB** ✅
 
-La Fase 0 establece la fundación técnica completa del proyecto:
+La Fase 1 conserva la fundación técnica e incorpora:
 - TanStack Start configurado en modo SPA
 - TypeScript estricto activo
 - Layout responsive (sidebar desktop + nav inferior móvil)
@@ -27,8 +27,13 @@ La Fase 0 establece la fundación técnica completa del proyecto:
 - Playwright configurado
 - ESLint/Biome con reglas arquitectónicas
 - GitHub Actions CI/CD
+- Base Dexie v1 tipada, versionada y abierta de forma perezosa
+- Bootstrap idempotente de `appSettings/main`
+- Diagnóstico estructural básico y profundo
+- StorageManager y panel técnico en Configuración
+- Pruebas reales con `fake-indexeddb`
 
-**Siguiente fase:** Fase 1 — Infraestructura local con Dexie e IndexedDB
+**Siguiente fase:** Fase 2 — Catálogo de productos y categorías
 
 ## Stack tecnológico
 
@@ -41,7 +46,7 @@ La Fase 0 establece la fundación técnica completa del proyecto:
 | Estilos | **Tailwind CSS** v4 + **shadcn/ui** |
 | Validación | **Zod** |
 | Formularios | **TanStack Form** |
-| Persistencia local | **Dexie** sobre **IndexedDB** (Fase 1+) |
+| Persistencia local | **Dexie 4.4.4** sobre **IndexedDB** |
 | Tests unitarios | **Vitest** + **React Testing Library** |
 | Tests E2E | **Playwright** |
 | Linter/Formatter | **Biome** |
@@ -120,9 +125,9 @@ bodegix-pos/
 └── vite.config.ts       TanStack Start + Tailwind
 ```
 
-## Alcance de la Fase 0
+## Alcance de la Fase 1
 
-La Fase 0 **contiene:**
+La Fase 1 **contiene:**
 - Base técnica y configuración completa
 - Layout responsive mobile-first
 - Rutas tipadas con navegación funcional
@@ -130,9 +135,10 @@ La Fase 0 **contiene:**
 - Shared kernel con utilidades reales y probadas
 - Suite de pruebas completa (unit + componentes + arquitectura + E2E)
 - CI/CD en GitHub Actions
+- Esquema local v1, bootstrap, persistencia, cuota y diagnóstico
+- Provider cliente con estados de inicialización, error y reintento
 
-La Fase 0 **no contiene todavía:**
-- Dexie / IndexedDB / esquema de base de datos
+La Fase 1 **no contiene todavía:**
 - Formularios de productos
 - Carrito de compras
 - Pagos
@@ -144,8 +150,8 @@ La Fase 0 **no contiene todavía:**
 
 | Fase | Descripción |
 |---|---|
-| **Fase 1** | Infraestructura local con Dexie e IndexedDB |
-| Fase 2 | Módulo catalog + productos |
+| **Fase 1** | Infraestructura local con Dexie e IndexedDB ✅ |
+| Fase 2 | Catálogo de productos y categorías |
 | Fase 3 | Módulo sales + carrito + cobro |
 | Fase 4 | Módulo cash + apertura/cierre |
 | Fase 5 | Módulo inventory + movimientos |
@@ -160,4 +166,8 @@ La Fase 0 **no contiene todavía:**
 - [Guía de desarrollo](docs/development.md)
 - [Estrategia de pruebas](docs/testing.md)
 - [Convenciones](docs/conventions.md)
+- [Base de datos local](docs/local-database.md)
+- [Esquema v1](docs/database-schema-v1.md)
+- [Migraciones](docs/database-migrations.md)
+- [Persistencia de almacenamiento](docs/storage-persistence.md)
 - [ADRs](docs/adr/)

@@ -40,18 +40,17 @@ Tareas:
 Módulos afectados: `settings`, `backup` (solo diagnóstico/estructura), `shared/infrastructure/db`.
 
 Tareas:
-- [ ] Esquema Dexie v1 completo (todas las tablas de [07-database-dexie.md](file:///c:/Users/ALEXIS/PROYECTOS/productos/bodegix-pos/docs/07-database-dexie.md))
-- [ ] `AppSettings` singleton `id="main"`, `installationId`, `nextSaleNumber`
-- [ ] Pantalla inicial de **onboarding**:
-  - Nombre de negocio, moneda PEN, timezone America/Lima
-  - Creación de settings, configuración inicial
-- [ ] Pantalla **Diagnóstico de integridad** (`runIntegrityCheck` versión 1)
-- [ ] `StorageManager`: solicitar `persist()`, estimar `quota` / `usage`
-- [ ] Fixtures de base v1, test de migraciones vacío
-- [ ] Ruta `/settings` (solo estructura y secciones)
-- [ ] Aplicar ADRs 0002, 0014 (Dexie como adaptador)
+- [x] Esquema Dexie v1 completo y registros tipados/validados
+- [x] `AppSettings` singleton `id="main"`, `installationId`, `nextSaleNumber`
+- [x] Bootstrap cliente idempotente, sin datos comerciales ni onboarding funcional
+- [x] Diagnóstico estructural básico al arrancar y profundo manual
+- [x] `StorageManager`: solicitar `persist()`, estimar `quota` / `usage`
+- [x] Pruebas aisladas con `fake-indexeddb`, índices y rollback
+- [x] Panel técnico en `/settings`
+- [x] Aplicar y ampliar ADRs 0002 y 0014
 
-**Entrega**: onboarding funciona, integridad OK, storage persistente solicitado.
+**Entrega**: base local lista, integridad observable y persistencia solicitada solo por acción
+explícita. La edición funcional de configuración permanece fuera de esta fase.
 
 ---
 

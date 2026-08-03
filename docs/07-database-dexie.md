@@ -1,5 +1,9 @@
 # 07. Diseño de base de datos Dexie
 
+> Implementación vigente de Fase 1: [database-schema-v1.md](./database-schema-v1.md). Ante una
+> diferencia con ejemplos históricos de este documento, el archivo de esquema v1 y esa referencia
+> son autoritativos.
+
 ## Propósito y frontera
 
 **Dexie es un adaptador de infraestructura.** No es el dominio.
