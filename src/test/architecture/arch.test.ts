@@ -171,6 +171,80 @@ describe("Arquitectura — módulos no importan privados de otros módulos", () 
 	});
 });
 
+describe("Arquitectura — catálogo y formularios compartidos", () => {
+	const productionFiles = (directory: string) =>
+		collectFiles(directory).filter(
+			(file) => !file.endsWith(".test.ts") && !file.endsWith(".test.tsx"),
+		);
+
+	it("el dominio del catálogo no importa React, TanStack Form ni Dexie", () => {
+		const violations = productionFiles(join(SRC, "modules/catalog/domain")).flatMap((file) =>
+			getImports(file)
+				.filter(
+					(moduleName) =>
+						moduleName === "react" ||
+						moduleName.includes("@tanstack/react-form") ||
+						moduleName === "dexie" ||
+						moduleName === "dexie-react-hooks",
+				)
+				.map((moduleName) => `${relative(SRC, file)}: importa "${moduleName}"`),
+		);
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("la aplicación del catálogo no importa UI, React ni Dexie", () => {
+		const violations = productionFiles(join(SRC, "modules/catalog/application")).flatMap((file) =>
+			getImports(file)
+				.filter(
+					(moduleName) =>
+						moduleName.includes("/ui") ||
+						moduleName === "react" ||
+						moduleName === "dexie" ||
+						moduleName === "dexie-react-hooks",
+				)
+				.map((moduleName) => `${relative(SRC, file)}: importa "${moduleName}"`),
+		);
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("los formularios compartidos no dependen de catálogo ni Dexie", () => {
+		const violations = productionFiles(join(SRC, "shared/ui/forms")).flatMap((file) =>
+			getImports(file)
+				.filter(
+					(moduleName) =>
+						moduleName.includes("modules/catalog") ||
+						moduleName === "dexie" ||
+						moduleName === "dexie-react-hooks",
+				)
+				.map((moduleName) => `${relative(SRC, file)}: importa "${moduleName}"`),
+		);
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("las rutas no importan Dexie ni implementan formularios", () => {
+		const violations: string[] = [];
+		for (const file of productionFiles(join(SRC, "routes"))) {
+			const content = readFileSync(file, "utf-8");
+			if (/dexie|useLiveQuery|useAppForm|<form[.>]/i.test(content)) {
+				violations.push(relative(SRC, file));
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("no se incorpora TanStack Query ni conversión monetaria con parseFloat", () => {
+		const violations: string[] = [];
+		for (const file of productionFiles(SRC)) {
+			const content = readFileSync(file, "utf-8");
+			if (content.includes("@tanstack/react-query")) violations.push(relative(SRC, file));
+			if (file.includes(join("shared", "kernel", "money")) && content.includes("parseFloat")) {
+				violations.push(`${relative(SRC, file)} usa parseFloat`);
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+});
+
 describe("Arquitectura — rutas no importan infraestructura privada de módulos", () => {
 	const routesDir = join(SRC, "routes");
 	const routeFiles = collectFiles(routesDir);
