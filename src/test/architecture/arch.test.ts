@@ -245,6 +245,133 @@ describe("Arquitectura — catálogo y formularios compartidos", () => {
 	});
 });
 
+describe("Arquitectura — inventario", () => {
+	const productionFiles = (directory: string) =>
+		collectFiles(directory).filter(
+			(file) => !file.endsWith(".test.ts") && !file.endsWith(".test.tsx"),
+		);
+
+	it("el dominio de inventario permanece puro", () => {
+		const violations = productionFiles(join(SRC, "modules/inventory/domain")).flatMap((file) =>
+			getImports(file)
+				.filter(
+					(moduleName) =>
+						moduleName === "react" ||
+						moduleName.startsWith("@tanstack/") ||
+						moduleName === "dexie" ||
+						moduleName === "dexie-react-hooks",
+				)
+				.map((moduleName) => `${relative(SRC, file)}: importa "${moduleName}"`),
+		);
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("la aplicación de inventario no depende de UI, React ni Dexie", () => {
+		const violations = productionFiles(join(SRC, "modules/inventory/application")).flatMap((file) =>
+			getImports(file)
+				.filter(
+					(moduleName) =>
+						moduleName.includes("/ui") ||
+						moduleName === "react" ||
+						moduleName === "dexie" ||
+						moduleName === "dexie-react-hooks",
+				)
+				.map((moduleName) => `${relative(SRC, file)}: importa "${moduleName}"`),
+		);
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("componentes y formularios no acceden a Dexie ni a tablas", () => {
+		const uiFiles = [
+			...productionFiles(join(SRC, "modules/inventory/ui/components")),
+			...productionFiles(join(SRC, "modules/inventory/ui/forms")),
+			...productionFiles(join(SRC, "modules/inventory/ui/overlays")),
+		];
+		const violations = uiFiles.flatMap((file) =>
+			getImports(file)
+				.filter(
+					(moduleName) =>
+						moduleName === "dexie" ||
+						moduleName === "dexie-react-hooks" ||
+						moduleName.includes("local-db"),
+				)
+				.map((moduleName) => `${relative(SRC, file)}: importa "${moduleName}"`),
+		);
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("las rutas no modifican stock y los formularios compartidos no dependen de inventario", () => {
+		const violations: string[] = [];
+		for (const file of productionFiles(join(SRC, "routes"))) {
+			const content = readFileSync(file, "utf-8");
+			if (/stockQuantity|inventoryMovements|applyStockMutation/.test(content)) {
+				violations.push(`${relative(SRC, file)} contiene lógica de inventario`);
+			}
+		}
+		for (const file of productionFiles(join(SRC, "shared/ui/forms"))) {
+			for (const moduleName of getImports(file)) {
+				if (moduleName.includes("modules/inventory")) {
+					violations.push(`${relative(SRC, file)}: importa "${moduleName}"`);
+				}
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("inventario no importa privados de catálogo y su infraestructura no importa componentes", () => {
+		const violations: string[] = [];
+		for (const file of productionFiles(join(SRC, "modules/inventory"))) {
+			for (const moduleName of getImports(file)) {
+				if (/@\/modules\/catalog\//.test(moduleName)) {
+					violations.push(`${relative(SRC, file)}: importa privado de catálogo "${moduleName}"`);
+				}
+				if (
+					file.includes(join("inventory", "infrastructure")) &&
+					(moduleName.includes("shared/components") || moduleName.includes("/ui"))
+				) {
+					violations.push(`${relative(SRC, file)}: importa componente "${moduleName}"`);
+				}
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+});
+
+describe("Arquitectura — dependencias entre módulos", () => {
+	it("no existen ciclos entre módulos", () => {
+		const modulesDir = join(SRC, "modules");
+		const modules = readdirSync(modulesDir).filter((entry) =>
+			statSync(join(modulesDir, entry)).isDirectory(),
+		);
+		const graph = new Map(modules.map((moduleName) => [moduleName, new Set<string>()]));
+		for (const moduleName of modules) {
+			for (const file of collectFiles(join(modulesDir, moduleName))) {
+				for (const imported of getImports(file)) {
+					const match = imported.match(/^(?:@|#)\/modules\/([^/]+)(?:\/index)?$/);
+					if (match?.[1] && match[1] !== moduleName) graph.get(moduleName)?.add(match[1]);
+				}
+			}
+		}
+		const visiting = new Set<string>();
+		const visited = new Set<string>();
+		const cycles: string[] = [];
+		const visit = (moduleName: string, path: string[]) => {
+			if (visiting.has(moduleName)) {
+				cycles.push([...path, moduleName].join(" -> "));
+				return;
+			}
+			if (visited.has(moduleName)) return;
+			visiting.add(moduleName);
+			for (const dependency of graph.get(moduleName) ?? [])
+				visit(dependency, [...path, moduleName]);
+			visiting.delete(moduleName);
+			visited.add(moduleName);
+		};
+		for (const moduleName of modules) visit(moduleName, []);
+		expect(cycles, `Ciclos:\n${cycles.join("\n")}`).toHaveLength(0);
+	});
+});
+
 describe("Arquitectura — rutas no importan infraestructura privada de módulos", () => {
 	const routesDir = join(SRC, "routes");
 	const routeFiles = collectFiles(routesDir);
