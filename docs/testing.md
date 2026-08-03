@@ -1,0 +1,100 @@
+# Estrategia de pruebas — Bodegix POS
+
+## Tipos de pruebas
+
+### 1. Unitarias (Vitest)
+
+Prueban lógica pura sin DOM ni red.
+
+**Ubicación:** junto al archivo que prueban (`*.test.ts`)
+
+**Comando:** `pnpm test`
+
+Ejemplo:
+```bash
+src/shared/kernel/money/money.test.ts
+src/shared/kernel/ids/ids.test.ts
+src/shared/kernel/text/text.test.ts
+src/shared/kernel/dates/dates.test.ts
+```
+
+### 2. Componentes (React Testing Library)
+
+Prueban comportamiento observable de componentes React en jsdom.
+
+**Ubicación:** junto al componente (`*.test.tsx`)
+
+**Comando:** `pnpm test`
+
+Ejemplo:
+```bash
+src/app/layout/app-shell.test.tsx
+```
+
+### 3. Arquitectura (Vitest)
+
+Prueban que las reglas de dependencia del monolito modular se cumplen.
+Analizan los imports estáticamente sin ejecutar código.
+
+**Ubicación:** `src/test/architecture/arch.test.ts`
+
+**Comando:** `pnpm test`
+
+Qué verifican:
+- El kernel no importa React, Dexie ni TanStack Router
+- Los módulos no importan archivos privados de otros módulos
+- Las rutas no importan infraestructura privada de módulos
+- Cada módulo tiene su `index.ts`
+
+### 4. E2E (Playwright)
+
+Prueban flujos completos en navegador real (Chromium).
+
+**Ubicación:** `e2e/*.spec.ts`
+
+**Comando:** `pnpm test:e2e`
+
+Requiere build previo (el playwright.config.ts lo hace automáticamente).
+
+## Helpers de test
+
+### `renderWithRouter`
+
+```typescript
+import { renderWithRouter } from "@/test/setup/test-router";
+
+// Renderiza un componente con un router en memoria
+renderWithRouter(<MiComponente />, { initialPath: "/sale" });
+```
+
+### `setIdGenerator` / `restoreIdGenerator`
+
+```typescript
+import { setIdGenerator, restoreIdGenerator } from "@/shared/kernel/ids";
+
+beforeEach(() => setIdGenerator(() => "test-id-fixed"));
+afterEach(() => restoreIdGenerator());
+```
+
+## Qué NO probar
+
+- Implementación interna de componentes (estado interno, refs)
+- Snapshots de HTML completos
+- Detalles de estilo CSS
+- Lógica de terceros (shadcn/ui, TanStack Router)
+
+## Colocación de pruebas
+
+```
+src/shared/kernel/money/
+├── money.ts
+├── money.test.ts      ← junto al archivo
+└── index.ts
+
+src/app/layout/
+├── app-shell.tsx
+├── app-shell.test.tsx ← junto al componente
+└── ...
+```
+
+Los tests E2E van en la carpeta `e2e/` en la raíz del proyecto.
