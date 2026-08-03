@@ -10,7 +10,7 @@ Archivo JSON o Blob generado por `dexie-export-import`, envuelto con metadatos p
 
 ```typescript
 interface BackupEnvelope {
-  format: "pos-bodega-backup";
+  format: "bodegix-pos-backup";
   formatVersion: 1;
   databaseSchemaVersion: 1;
   appVersion: string;
@@ -35,7 +35,7 @@ interface BackupEnvelope {
 ## Nombre
 
 ```text
-pos-bodega_<negocio>_<YYYY-MM-DD_HH-mm>.json
+bodegix-pos_<negocio>_<YYYY-MM-DD_HH-mm>.json
 ```
 
 ## Exportación

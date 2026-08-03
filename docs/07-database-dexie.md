@@ -3,7 +3,7 @@
 ## Nombre
 
 ```text
-pos-bodega
+bodegix-pos
 ```
 
 ## Tablas e índices
@@ -52,7 +52,7 @@ this.version(1).stores({
 ```typescript
 import Dexie, { type EntityTable } from "dexie";
 
-export class PosDatabase extends Dexie {
+export class BodegixPosDatabase extends Dexie {
   products!: EntityTable<Product, "id">;
   categories!: EntityTable<Category, "id">;
   sales!: EntityTable<Sale, "id">;
@@ -64,7 +64,7 @@ export class PosDatabase extends Dexie {
   appSettings!: EntityTable<AppSettings, "id">;
 
   constructor() {
-    super("pos-bodega");
+    super("bodegix-pos");
 
     this.version(1).stores({
       products:

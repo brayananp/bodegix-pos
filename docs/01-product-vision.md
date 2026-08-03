@@ -1,10 +1,12 @@
 # 01. Visión del producto
 
-## Nombre provisional
+## Identidad
 
-**POS Bodega Offline**
-
-El nombre comercial se decidirá después de validar el producto.
+| Campo | Valor |
+|---|---|
+| Nombre comercial | **Bodegix** |
+| Nombre del proyecto | **Bodegix POS** |
+| Repositorio / paquete | `bodegix-pos` |
 
 ## Problema
 
