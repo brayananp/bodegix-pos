@@ -6,11 +6,18 @@ import type {
 	CategoryRecord,
 	InventoryMovementRecord,
 	ProductRecord,
+	SaleDraftRecord,
 	SaleItemRecord,
 	SalePaymentRecord,
 	SaleRecord,
 } from "./records";
-import { DATABASE_NAME, registerSchemaV1, registerSchemaV2, registerSchemaV3 } from "./schema";
+import {
+	DATABASE_NAME,
+	registerSchemaV1,
+	registerSchemaV2,
+	registerSchemaV3,
+	registerSchemaV4,
+} from "./schema";
 
 export class BodegixDatabase extends Dexie {
 	categories!: EntityTable<CategoryRecord, "id">;
@@ -22,11 +29,13 @@ export class BodegixDatabase extends Dexie {
 	cashSessions!: EntityTable<CashSessionRecord, "id">;
 	cashMovements!: EntityTable<CashMovementRecord, "id">;
 	appSettings!: EntityTable<AppSettingsRecord, "id">;
+	saleDrafts!: EntityTable<SaleDraftRecord, "id">;
 
 	constructor(databaseName = DATABASE_NAME) {
 		super(databaseName);
 		registerSchemaV1(this);
 		registerSchemaV2(this);
 		registerSchemaV3(this);
+		registerSchemaV4(this);
 	}
 }
