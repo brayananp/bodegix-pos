@@ -147,6 +147,8 @@ test("clasifica un producto como stock bajo y después como agotado", async ({ p
 	await openInventoryDetail(page, "Producto de alerta");
 	await initializeStock(page, "10");
 	await reconcileStock(page, "4", "Conteo para alerta baja");
+	// Esperar a que el toast desaparezca antes de hacer clic
+	await page.waitForTimeout(1000);
 	await page.getByRole("button", { name: "Cerrar" }).first().click();
 	await page.getByRole("combobox", { name: "Stock" }).click();
 	await page.getByRole("option", { name: "Stock bajo" }).click();

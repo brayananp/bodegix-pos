@@ -9,7 +9,7 @@ test("gestiona categorías y productos desde overlays conservando contexto", asy
 		if (message.type() === "error") browserErrors.push(message.text());
 	});
 	await page.goto("/products");
-	await expect(page.getByRole("heading", { name: "Productos" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Productos", exact: true })).toBeVisible();
 
 	await page.getByRole("tab", { name: "Categorías" }).click();
 	await page.getByRole("button", { name: "Nueva categoría" }).click();
