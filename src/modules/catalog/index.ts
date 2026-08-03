@@ -15,3 +15,8 @@
 export const CATALOG_MODULE = "catalog" as const;
 
 export type CatalogModuleId = typeof CATALOG_MODULE;
+
+export * from "./application";
+export * from "./domain";
+export * from "./infrastructure";
+export * from "./ui";

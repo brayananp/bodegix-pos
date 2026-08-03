@@ -11,18 +11,18 @@ Gestión de productos y categorías del catálogo de la bodega.
 
 ## Estado actual
 
-Fase 0: solo se define el límite del módulo y la API pública.
-No contiene lógica funcional todavía.
+Fase 2 implementada: dominio, casos de uso, puertos, adaptador Dexie, consultas
+reactivas, formularios compuestos y UI responsive en `/products`.
 
-## Próxima fase (Fase 1+)
+## Estructura
 
 ```
 catalog/
-├── domain/         Entidades Product, Category; value objects; invariantes
-├── application/    Casos de uso: createProduct, updateProduct, deactivateProduct
-├── infrastructure/ Adaptadores Dexie: CatalogDexieRepository
-├── ui/             Componentes React específicos del catálogo
-└── index.ts        API PÚBLICA — único punto de entrada al módulo
+├── domain/         Product, Category, normalización y errores tipados
+├── application/    Comandos, consultas y puertos específicos
+├── infrastructure/ Store y queries Dexie transaccionales
+├── ui/             Formularios, hooks, listas, página y overlays
+└── index.ts        API pública del módulo
 ```
 
 ## API pública (index.ts)
