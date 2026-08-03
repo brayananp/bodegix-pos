@@ -144,6 +144,8 @@ export class DexieCompleteSaleUnitOfWork implements CompleteSaleUnitOfWork {
 						totalCents,
 						status: "completed",
 						createdAt: now,
+						voidReason: null,
+						voidedAt: null,
 					});
 
 					// 9. Crear SaleItems + descontar stock + crear movimientos
