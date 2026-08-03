@@ -1,7 +1,8 @@
 {
   "project": "Bodegix POS",
-  "documentationVersion": "1.0.0",
+  "documentationVersion": "1.1.0",
   "createdAt": "2026-08-02",
+  "updatedAt": "2026-08-02",
   "language": "es-PE",
   "files": [
     "README.md",
@@ -29,6 +30,15 @@
     "docs/adr/0003-store-money-in-cents.md",
     "docs/adr/0004-manual-external-payments.md",
     "docs/adr/0005-inventory-ledger.md",
-    "docs/adr/0006-no-credit-in-initial-mvp.md"
+    "docs/adr/0006-no-credit-in-initial-mvp.md",
+    "docs/adr/0007-local-first-modular-monolith.md",
+    "docs/adr/0008-vertical-slices.md",
+    "docs/adr/0009-selective-ports-and-adapters.md",
+    "docs/adr/0010-command-query-separation.md",
+    "docs/adr/0011-payments-inside-sales.md",
+    "docs/adr/0012-no-microservices.md",
+    "docs/adr/0013-no-event-sourcing.md",
+    "docs/adr/0014-dexie-as-local-adapter.md",
+    "docs/adr/0015-inventory-hybrid-model.md"
   ]
 }
