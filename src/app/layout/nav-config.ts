@@ -1,63 +1,66 @@
 /**
  * Configuración de la navegación principal de Bodegix POS.
- * Centraliza las rutas de la barra de navegación para desktop y móvil.
+ * Centraliza las rutas y los metadatos de cada ítem de navegación.
  */
 
+import {
+	AnalyticsUpIcon,
+	DeliveryBox02Icon,
+	PackageSentIcon,
+	Payment02Icon,
+	Settings02Icon,
+	ShoppingCartCheckIn02Icon,
+} from "@hugeicons/core-free-icons";
+import type { HugeiconsIconProps } from "@hugeicons/react";
+
 export interface NavItem {
-	/** Ruta de TanStack Router */
 	to: string;
-	/** Etiqueta visible */
 	label: string;
-	/** Clave del ícono de HugeIcons */
-	icon: string;
-	/** Descripción accesible para aria-label */
 	description: string;
+	icon: HugeiconsIconProps["icon"];
 }
 
 /**
- * Navegación principal. Orden deliberado para el flujo de trabajo diario:
- * 1. Venta (pantalla de trabajo principal)
- * 2. Productos (catálogo)
- * 3. Inventario (stock)
- * 4. Caja (apertura/cierre)
- * 5. Resumen (reportes diarios)
- * 6. Configuración
+ * Navegación principal ordenada por frecuencia de uso diario.
  */
 export const PRIMARY_NAV: readonly NavItem[] = [
 	{
 		to: "/sale",
 		label: "Venta",
-		icon: "ShoppingCartCheckIn02Icon",
 		description: "Punto de venta",
+		icon: ShoppingCartCheckIn02Icon,
 	},
 	{
 		to: "/products",
 		label: "Productos",
-		icon: "DeliveryBox02Icon",
 		description: "Catálogo de productos",
+		icon: DeliveryBox02Icon,
 	},
 	{
 		to: "/inventory",
 		label: "Inventario",
-		icon: "PackageSentIcon",
 		description: "Control de inventario",
+		icon: PackageSentIcon,
 	},
 	{
 		to: "/cash",
 		label: "Caja",
-		icon: "CashPaymentIcon",
 		description: "Gestión de caja",
+		icon: Payment02Icon,
 	},
 	{
 		to: "/summary",
 		label: "Resumen",
-		icon: "AnalyticsUpIcon",
 		description: "Resumen y reportes diarios",
+		icon: AnalyticsUpIcon,
 	},
+] as const;
+
+export const SECONDARY_NAV: readonly NavItem[] = [
 	{
 		to: "/settings",
-		label: "Ajustes",
-		icon: "Settings02Icon",
-		description: "Configuración de la bodega",
+		label: "Configuración",
+		description: "Ajustes de la bodega",
+		icon: Settings02Icon,
 	},
 ] as const;

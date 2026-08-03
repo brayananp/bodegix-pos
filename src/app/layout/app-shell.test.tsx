@@ -1,6 +1,4 @@
-/**
- * Pruebas de componente del layout principal de Bodegix POS.
- */
+import { SidebarProvider } from "@/shared/components/ui/sidebar";
 import { renderWithRouter } from "@/test/setup/test-router";
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -16,53 +14,63 @@ afterEach(() => {
 	vi.clearAllMocks();
 });
 
-describe("AppSidebar", () => {
-	it("renderiza el nombre de la app", async () => {
-		await renderWithRouter(<AppSidebar />);
-		expect(screen.getByText("Bodegix")).toBeInTheDocument();
-	});
+/**
+ * AppSidebar requiere SidebarProvider en el árbol para leer el contexto.
+ * Lo envolvemos en el wrapper del router.
+ */
+function SidebarWrapper({ children }: { children: React.ReactNode }) {
+	return <SidebarProvider>{children}</SidebarProvider>;
+}
 
+describe("AppSidebar", () => {
 	it("renderiza los labels de navegación visibles", async () => {
-		await renderWithRouter(<AppSidebar />);
+		await renderWithRouter(
+			<SidebarWrapper>
+				<AppSidebar />
+			</SidebarWrapper>,
+		);
 		expect(screen.getByText("Venta")).toBeInTheDocument();
 		expect(screen.getByText("Productos")).toBeInTheDocument();
 		expect(screen.getByText("Inventario")).toBeInTheDocument();
 		expect(screen.getByText("Caja")).toBeInTheDocument();
 		expect(screen.getByText("Resumen")).toBeInTheDocument();
-		expect(screen.getByText("Ajustes")).toBeInTheDocument();
+		expect(screen.getByText("Configuración")).toBeInTheDocument();
 	});
 
-	it("tiene un elemento aside con aria-label de navegación", async () => {
-		await renderWithRouter(<AppSidebar />);
-		const sidebar = screen.getByRole("complementary", {
-			name: /Navegación principal/i,
-		});
-		expect(sidebar).toBeInTheDocument();
+	it("renderiza el nombre Bodegix", async () => {
+		await renderWithRouter(
+			<SidebarWrapper>
+				<AppSidebar />
+			</SidebarWrapper>,
+		);
+		expect(screen.getByText("Bodegix")).toBeInTheDocument();
 	});
 
-	it("los links tienen aria-label accesibles", async () => {
-		await renderWithRouter(<AppSidebar />);
-		expect(screen.getByRole("link", { name: /Punto de Venta/i })).toBeInTheDocument();
-		expect(screen.getByRole("link", { name: /Catálogo de productos/i })).toBeInTheDocument();
+	it("renderiza el subtítulo Punto de Venta", async () => {
+		await renderWithRouter(
+			<SidebarWrapper>
+				<AppSidebar />
+			</SidebarWrapper>,
+		);
+		expect(screen.getByText("Punto de Venta")).toBeInTheDocument();
 	});
 });
 
 describe("BottomNav", () => {
 	it("renderiza la barra de navegación inferior", async () => {
 		await renderWithRouter(<BottomNav />);
-		const nav = screen.getByRole("navigation", {
-			name: /Navegación principal/i,
-		});
+		const nav = screen.getByRole("navigation", { name: /Navegación principal/i });
 		expect(nav).toBeInTheDocument();
 	});
 
-	it("muestra los labels de los ítems de navegación", async () => {
+	it("muestra todos los ítems de navegación en móvil", async () => {
 		await renderWithRouter(<BottomNav />);
 		expect(screen.getByText("Venta")).toBeInTheDocument();
 		expect(screen.getByText("Productos")).toBeInTheDocument();
 		expect(screen.getByText("Inventario")).toBeInTheDocument();
 		expect(screen.getByText("Caja")).toBeInTheDocument();
 		expect(screen.getByText("Resumen")).toBeInTheDocument();
+		expect(screen.getByText("Configuración")).toBeInTheDocument();
 	});
 });
 
@@ -72,13 +80,13 @@ describe("OfflineBadge", () => {
 		expect(container.firstChild).toBeNull();
 	});
 
-	it("muestra badge cuando está offline", () => {
+	it("muestra el badge cuando está offline", () => {
 		render(<OfflineBadge isOnline={false} />);
 		expect(screen.getByText(/Sin conexión/i)).toBeInTheDocument();
 	});
 
-	it("tiene role=status cuando está offline", () => {
-		render(<OfflineBadge isOnline={false} />);
-		expect(screen.getByRole("status")).toBeInTheDocument();
+	it("usa el elemento output para accesibilidad", () => {
+		const { container } = render(<OfflineBadge isOnline={false} />);
+		expect(container.querySelector("output")).toBeInTheDocument();
 	});
 });
