@@ -14,3 +14,5 @@
 export const SETTINGS_MODULE = "settings" as const;
 
 export type SettingsModuleId = typeof SETTINGS_MODULE;
+
+export { LocalStorageStatusCard } from "./ui/components/local-storage-status-card";

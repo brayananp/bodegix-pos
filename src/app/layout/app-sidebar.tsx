@@ -26,7 +26,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	}
 
 	return (
-		<Sidebar collapsible="icon" {...props}>
+		<Sidebar role="complementary" aria-label="Navegación principal" collapsible="icon" {...props}>
 			{/* ── Cabecera: logo + nombre ─────────────────────────── */}
 			<SidebarHeader>
 				<SidebarMenu>

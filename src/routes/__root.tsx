@@ -1,4 +1,5 @@
 import { AppShell } from "@/app/layout/app-shell";
+import { LocalDatabaseProvider } from "@/app/providers/local-database-provider";
 import { Toaster } from "@/shared/components/ui/sonner";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
@@ -40,8 +41,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 					disableTransitionOnChange
 				>
 					<TooltipProvider delay={500}>
-						{children}
-						<Toaster position="top-right" richColors closeButton />
+						<LocalDatabaseProvider>
+							{children}
+							<Toaster position="top-right" richColors closeButton />
+						</LocalDatabaseProvider>
 					</TooltipProvider>
 				</ThemeProvider>
 				<Scripts />
