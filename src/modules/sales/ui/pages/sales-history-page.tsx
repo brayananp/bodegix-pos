@@ -14,6 +14,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import type { SaleHistorySummary } from "../../application";
+import { SaleDetailSheet } from "../components";
 import { useSaleHistory } from "../hooks";
 
 const PAGE_SIZE = 20;
@@ -38,6 +39,7 @@ export function SalesHistoryPage() {
 	const navigate = useNavigate();
 	const searchParams = useSearch({ from: "/sales" });
 	const [searchInput, setSearchInput] = useState(searchParams.search ?? "");
+	const [selectedSaleId, setSelectedSaleId] = useState<string | null>(null);
 
 	const page = searchParams.page ?? 1;
 	const status = searchParams.status;
@@ -158,7 +160,7 @@ export function SalesHistoryPage() {
 				) : (
 					<div className="space-y-2">
 						{result.items.map((sale) => (
-							<SaleCard key={sale.id} sale={sale} />
+							<SaleCard key={sale.id} sale={sale} onClick={() => setSelectedSaleId(sale.id)} />
 						))}
 					</div>
 				)}
@@ -190,15 +192,19 @@ export function SalesHistoryPage() {
 					</div>
 				</div>
 			)}
+
+			{/* Sheet de detalle */}
+			<SaleDetailSheet saleId={selectedSaleId} onClose={() => setSelectedSaleId(null)} />
 		</div>
 	);
 }
 
 interface SaleCardProps {
 	sale: SaleHistorySummary;
+	onClick: () => void;
 }
 
-function SaleCard({ sale }: SaleCardProps) {
+function SaleCard({ sale, onClick }: SaleCardProps) {
 	const statusLabel = sale.status === "completed" ? "Completada" : "Anulada";
 	const statusColor = sale.status === "completed" ? "text-green-600" : "text-red-600";
 
@@ -222,7 +228,18 @@ function SaleCard({ sale }: SaleCardProps) {
 		.join(", ");
 
 	return (
-		<div className="rounded-lg border bg-card p-4 hover:bg-accent/50 transition-colors cursor-pointer">
+		<div
+			className="rounded-lg border bg-card p-4 hover:bg-accent/50 transition-colors cursor-pointer"
+			onClick={onClick}
+			onKeyDown={(e: React.KeyboardEvent) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					onClick();
+				}
+			}}
+			role="button"
+			tabIndex={0}
+		>
 			<div className="flex items-start justify-between">
 				<div className="space-y-1">
 					<div className="flex items-center gap-2">
@@ -246,7 +263,7 @@ function SalesListSkeleton() {
 	return (
 		<div className="space-y-2">
 			{Array.from({ length: 5 }).map((_, i) => (
-				<Skeleton key={i} className="h-24 w-full" />
+				<Skeleton key={`${i}-skelton`} className="h-24 w-full" />
 			))}
 		</div>
 	);
