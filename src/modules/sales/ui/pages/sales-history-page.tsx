@@ -32,6 +32,20 @@ function formatShortDate(timestamp: number): string {
 	}).format(timestamp);
 }
 
+const SALE_STATUS = {
+	all: "Todas",
+	completed: "Completadas",
+	voided: "Anuladas",
+};
+
+const METHOD_PAYMENTS = {
+	all: "Todos los métodos",
+	cash: "Efectivo",
+	yape: "Yape",
+	plin: "Plin",
+	card: "Tarjeta",
+	bank_transfer: "Transferencia",
+};
 /**
  * Página de historial de ventas.
  *
@@ -119,12 +133,13 @@ export function SalesHistoryPage() {
 					</div>
 
 					<Select
+						items={SALE_STATUS}
 						value={status ?? "all"}
 						onValueChange={(v: string | null) =>
 							handleFilterChange("status", v === "all" || v === null ? undefined : v)
 						}
 					>
-						<SelectTrigger className="w-[160px]">
+						<SelectTrigger className="w-40">
 							<SelectValue placeholder="Estado" />
 						</SelectTrigger>
 						<SelectContent>
@@ -135,12 +150,13 @@ export function SalesHistoryPage() {
 					</Select>
 
 					<Select
+						items={METHOD_PAYMENTS}
 						value={method ?? "all"}
 						onValueChange={(v: string | null) =>
 							handleFilterChange("method", v === "all" || v === null ? undefined : v)
 						}
 					>
-						<SelectTrigger className="w-[180px]">
+						<SelectTrigger className="w-45">
 							<SelectValue placeholder="Método de pago" />
 						</SelectTrigger>
 						<SelectContent>
@@ -260,7 +276,7 @@ function SalesListSkeleton() {
 	return (
 		<div className="space-y-2">
 			{Array.from({ length: 5 }).map((_, i) => (
-				<Skeleton key={i} className="h-24 w-full" />
+				<Skeleton key={`${i}-sketon-history`} className="h-24 w-full" />
 			))}
 		</div>
 	);

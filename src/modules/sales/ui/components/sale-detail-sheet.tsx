@@ -40,7 +40,7 @@ export function SaleDetailSheet({ saleId, onClose }: SaleDetailSheetProps) {
 			<SheetContent
 				side="right"
 				showCloseButton={false}
-				className="h-dvh w-full max-w-none gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-[680px]"
+				className="h-dvh w-full max-w-none gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-170"
 			>
 				<SheetHeader className="shrink-0 border-b pr-4 md:px-6">
 					<div className="flex items-start justify-between gap-3">
