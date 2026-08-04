@@ -14,6 +14,7 @@ import { Route as CashRouteImport } from './routes/cash'
 import { Route as InventoryRouteImport } from './routes/inventory'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as SaleRouteImport } from './routes/sale'
+import { Route as SalesRouteImport } from './routes/sales'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SummaryRouteImport } from './routes/summary'
 
@@ -42,6 +43,11 @@ const SaleRoute = SaleRouteImport.update({
   path: '/sale',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SalesRoute = SalesRouteImport.update({
+  id: '/sales',
+  path: '/sales',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/inventory': typeof InventoryRoute
   '/products': typeof ProductsRoute
   '/sale': typeof SaleRoute
+  '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
   '/summary': typeof SummaryRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/inventory': typeof InventoryRoute
   '/products': typeof ProductsRoute
   '/sale': typeof SaleRoute
+  '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
   '/summary': typeof SummaryRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/inventory': typeof InventoryRoute
   '/products': typeof ProductsRoute
   '/sale': typeof SaleRoute
+  '/sales': typeof SalesRoute
   '/settings': typeof SettingsRoute
   '/summary': typeof SummaryRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/products'
     | '/sale'
+    | '/sales'
     | '/settings'
     | '/summary'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/products'
     | '/sale'
+    | '/sales'
     | '/settings'
     | '/summary'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/inventory'
     | '/products'
     | '/sale'
+    | '/sales'
     | '/settings'
     | '/summary'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   InventoryRoute: typeof InventoryRoute
   ProductsRoute: typeof ProductsRoute
   SaleRoute: typeof SaleRoute
+  SalesRoute: typeof SalesRoute
   SettingsRoute: typeof SettingsRoute
   SummaryRoute: typeof SummaryRoute
 }
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SaleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sales': {
+      id: '/sales'
+      path: '/sales'
+      fullPath: '/sales'
+      preLoaderRoute: typeof SalesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   InventoryRoute: InventoryRoute,
   ProductsRoute: ProductsRoute,
   SaleRoute: SaleRoute,
+  SalesRoute: SalesRoute,
   SettingsRoute: SettingsRoute,
   SummaryRoute: SummaryRoute,
 }

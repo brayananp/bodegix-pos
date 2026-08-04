@@ -9,6 +9,7 @@ import {
 	PackageSentIcon,
 	Payment02Icon,
 	Settings02Icon,
+	ShoppingBag03Icon,
 	ShoppingCartCheckIn02Icon,
 } from "@hugeicons/core-free-icons";
 import type { HugeiconsIconProps } from "@hugeicons/react";
@@ -29,6 +30,12 @@ export const PRIMARY_NAV: readonly NavItem[] = [
 		label: "Venta",
 		description: "Punto de venta",
 		icon: ShoppingCartCheckIn02Icon,
+	},
+	{
+		to: "/sales",
+		label: "Ventas",
+		description: "Historial de ventas",
+		icon: ShoppingBag03Icon,
 	},
 	{
 		to: "/products",
