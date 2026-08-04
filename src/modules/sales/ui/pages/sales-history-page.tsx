@@ -1,3 +1,6 @@
+import { AppShell } from "@/app/layout/app-shell";
+import { PageHeader } from "@/app/layout/page-header";
+import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import {
@@ -83,76 +86,75 @@ export function SalesHistoryPage() {
 	};
 
 	return (
-		<div className="flex h-full flex-col gap-6 p-6">
-			{/* Header */}
-			<div className="flex items-center gap-3">
-				<div className="flex size-12 items-center justify-center rounded-lg bg-primary/10">
-					<HugeiconsIcon icon={ShoppingBag03Icon} className="size-6 text-primary" />
+		<AppShell pageTitle="Ventas">
+			<PageHeader
+				title="Historial de Ventas"
+				description="Consulta y gestiona las ventas registradas"
+				badge={
+					result ? (
+						<Badge variant="secondary">{result.totalCount} ventas</Badge>
+					) : (
+						<Badge variant="outline">Cargando...</Badge>
+					)
+				}
+			/>
+
+			<main className="grid gap-4 px-4 pb-8 md:px-6">
+				{/* Filtros */}
+				<div className="flex flex-wrap gap-3">
+					<div className="flex flex-1 gap-2">
+						<Input
+							placeholder="Buscar por número, producto o referencia..."
+							value={searchInput}
+							onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchInput(e.target.value)}
+							onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+								if (e.key === "Enter") handleSearch();
+							}}
+							className="flex-1"
+						/>
+						<Button onClick={handleSearch} variant="secondary">
+							<HugeiconsIcon icon={Search01Icon} className="size-4" />
+							Buscar
+						</Button>
+					</div>
+
+					<Select
+						value={status ?? "all"}
+						onValueChange={(v: string | null) =>
+							handleFilterChange("status", v === "all" || v === null ? undefined : v)
+						}
+					>
+						<SelectTrigger className="w-[160px]">
+							<SelectValue placeholder="Estado" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">Todos</SelectItem>
+							<SelectItem value="completed">Completadas</SelectItem>
+							<SelectItem value="voided">Anuladas</SelectItem>
+						</SelectContent>
+					</Select>
+
+					<Select
+						value={method ?? "all"}
+						onValueChange={(v: string | null) =>
+							handleFilterChange("method", v === "all" || v === null ? undefined : v)
+						}
+					>
+						<SelectTrigger className="w-[180px]">
+							<SelectValue placeholder="Método de pago" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">Todos los métodos</SelectItem>
+							<SelectItem value="cash">Efectivo</SelectItem>
+							<SelectItem value="yape">Yape</SelectItem>
+							<SelectItem value="plin">Plin</SelectItem>
+							<SelectItem value="card">Tarjeta</SelectItem>
+							<SelectItem value="bank_transfer">Transferencia</SelectItem>
+						</SelectContent>
+					</Select>
 				</div>
-				<div>
-					<h1 className="text-2xl font-semibold tracking-tight">Historial de Ventas</h1>
-					<p className="text-sm text-muted-foreground">
-						Consulta y gestiona las ventas registradas
-					</p>
-				</div>
-			</div>
 
-			{/* Filtros */}
-			<div className="flex flex-wrap gap-3">
-				<div className="flex flex-1 gap-2">
-					<Input
-						placeholder="Buscar por número, producto o referencia..."
-						value={searchInput}
-						onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchInput(e.target.value)}
-						onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-							if (e.key === "Enter") handleSearch();
-						}}
-						className="flex-1"
-					/>
-					<Button onClick={handleSearch} variant="secondary">
-						<HugeiconsIcon icon={Search01Icon} className="size-4" />
-						Buscar
-					</Button>
-				</div>
-
-				<Select
-					value={status ?? "all"}
-					onValueChange={(v: string | null) =>
-						handleFilterChange("status", v === "all" || v === null ? undefined : v)
-					}
-				>
-					<SelectTrigger className="w-[160px]">
-						<SelectValue placeholder="Estado" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="all">Todos</SelectItem>
-						<SelectItem value="completed">Completadas</SelectItem>
-						<SelectItem value="voided">Anuladas</SelectItem>
-					</SelectContent>
-				</Select>
-
-				<Select
-					value={method ?? "all"}
-					onValueChange={(v: string | null) =>
-						handleFilterChange("method", v === "all" || v === null ? undefined : v)
-					}
-				>
-					<SelectTrigger className="w-[180px]">
-						<SelectValue placeholder="Método de pago" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="all">Todos los métodos</SelectItem>
-						<SelectItem value="cash">Efectivo</SelectItem>
-						<SelectItem value="yape">Yape</SelectItem>
-						<SelectItem value="plin">Plin</SelectItem>
-						<SelectItem value="card">Tarjeta</SelectItem>
-						<SelectItem value="bank_transfer">Transferencia</SelectItem>
-					</SelectContent>
-				</Select>
-			</div>
-
-			{/* Lista de ventas */}
-			<div className="flex-1 overflow-auto">
+				{/* Lista de ventas */}
 				{!result ? (
 					<SalesListSkeleton />
 				) : result.items.length === 0 ? (
@@ -164,38 +166,40 @@ export function SalesHistoryPage() {
 						))}
 					</div>
 				)}
-			</div>
 
-			{/* Paginación */}
-			{result && result.totalPages > 1 && (
-				<div className="flex items-center justify-between border-t pt-4">
-					<p className="text-sm text-muted-foreground">
-						Página {result.page} de {result.totalPages} · {result.totalCount} ventas
-					</p>
-					<div className="flex gap-2">
-						<Button
-							variant="outline"
-							size="sm"
-							disabled={!result.hasPreviousPage}
-							onClick={() => handlePageChange(page - 1)}
-						>
-							Anterior
-						</Button>
-						<Button
-							variant="outline"
-							size="sm"
-							disabled={!result.hasNextPage}
-							onClick={() => handlePageChange(page + 1)}
-						>
-							Siguiente
-						</Button>
+				{/* Paginación */}
+				{result && result.totalPages > 1 && (
+					<div className="flex items-center justify-between rounded-lg border bg-card p-4">
+						<p className="text-sm text-muted-foreground">
+							Página {result.page} de {result.totalPages} · {result.totalCount} ventas
+						</p>
+						<div className="flex gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={!result.hasPreviousPage}
+								onClick={() => handlePageChange(page - 1)}
+							>
+								Anterior
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={!result.hasNextPage}
+								onClick={() => handlePageChange(page + 1)}
+							>
+								Siguiente
+							</Button>
+						</div>
 					</div>
-				</div>
-			)}
+				)}
+			</main>
 
 			{/* Sheet de detalle */}
-			<SaleDetailSheet saleId={selectedSaleId} onClose={() => setSelectedSaleId(null)} />
-		</div>
+			{selectedSaleId && (
+				<SaleDetailSheet saleId={selectedSaleId} onClose={() => setSelectedSaleId(null)} />
+			)}
+		</AppShell>
 	);
 }
 
@@ -228,17 +232,10 @@ function SaleCard({ sale, onClick }: SaleCardProps) {
 		.join(", ");
 
 	return (
-		<div
-			className="rounded-lg border bg-card p-4 hover:bg-accent/50 transition-colors cursor-pointer"
+		<button
+			type="button"
+			className="w-full rounded-lg border bg-card p-4 text-left transition-colors hover:bg-accent/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 			onClick={onClick}
-			onKeyDown={(e: React.KeyboardEvent) => {
-				if (e.key === "Enter" || e.key === " ") {
-					e.preventDefault();
-					onClick();
-				}
-			}}
-			role="button"
-			tabIndex={0}
 		>
 			<div className="flex items-start justify-between">
 				<div className="space-y-1">
@@ -252,10 +249,10 @@ function SaleCard({ sale, onClick }: SaleCardProps) {
 					<p className="text-xs text-muted-foreground">{methodsLabel}</p>
 				</div>
 				<div className="text-right">
-					<p className="text-lg font-semibold">{formatMoney(sale.totalCents)}</p>
+					<p className="text-lg font-semibold tabular-nums">{formatMoney(sale.totalCents)}</p>
 				</div>
 			</div>
-		</div>
+		</button>
 	);
 }
 
@@ -263,7 +260,7 @@ function SalesListSkeleton() {
 	return (
 		<div className="space-y-2">
 			{Array.from({ length: 5 }).map((_, i) => (
-				<Skeleton key={`${i}-skelton`} className="h-24 w-full" />
+				<Skeleton key={i} className="h-24 w-full" />
 			))}
 		</div>
 	);
@@ -271,8 +268,8 @@ function SalesListSkeleton() {
 
 function EmptyState() {
 	return (
-		<div className="flex h-full items-center justify-center">
-			<div className="text-center space-y-2">
+		<div className="flex min-h-[40vh] items-center justify-center rounded-xl border bg-card">
+			<div className="space-y-3 text-center">
 				<HugeiconsIcon icon={ShoppingBag03Icon} className="mx-auto size-12 text-muted-foreground" />
 				<h3 className="text-lg font-semibold">No hay ventas</h3>
 				<p className="text-sm text-muted-foreground">
