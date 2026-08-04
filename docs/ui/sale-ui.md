@@ -396,3 +396,617 @@ Transacción de venta con gestión de estados.
 - Descuentos y promociones
 - Clientes frecuentes
 - Fiado y cuentas por cobrar
+
+
+---
+
+## Interfaz de historial de ventas (Fase 6)
+
+### Ruta: `/sales`
+
+Página de consulta y gestión del historial de ventas registradas.
+
+**Search params:**
+- `search` — término de búsqueda (número, producto, referencia)
+- `status` — filtro: `"completed"` | `"voided"`
+- `method` — filtro de método de pago
+- `page` — número de página (1-indexed, default: 1)
+
+## Layout de historial
+
+### `SalesHistoryPage`
+
+**Estructura:**
+- AppShell wrapper
+- PageHeader con título, descripción y badge de total
+- Filtros horizontales en barra
+- Lista de ventas con paginación
+- Sheet modal para detalle
+
+**Header:**
+```
+Historial de Ventas
+Consulta y gestiona las ventas registradas
+[Badge: 123 ventas]
+```
+
+**Filtros:**
+- Input de búsqueda con placeholder descriptivo
+- Botón "Buscar" con ícono
+- Select de estado (Todas/Completadas/Anuladas)
+- Select de método de pago (Todos/Efectivo/Yape/Plin/etc.)
+
+**Comportamiento:**
+- Filtros se sincronizan con URL
+- Búsqueda con Enter o botón
+- Cambio de filtro resetea a página 1
+- Estados persisten en navegación
+
+### Filtros responsivos
+
+**Desktop:**
+```
+[Input: Buscar...                    ] [Buscar] [Estado ▾] [Método ▾]
+```
+
+**Móvil:**
+```
+[Input: Buscar...     ] [Buscar]
+[Estado ▾] [Método ▾]
+```
+
+Flex wrap automático en pantallas pequeñas.
+
+### Lista de ventas
+
+**Card por venta:**
+```
+┌────────────────────────────────────────┐
+│ Venta #123          ✓ Completada      │
+│ 15 ene 2025, 14:30 · 3 items          │
+│ Efectivo, Yape                         │
+│                            S/ 85.50    │
+└────────────────────────────────────────┘
+```
+
+**Información visible:**
+- Número de venta (V-000123)
+- Estado con color (verde: completada, rojo: anulada)
+- Fecha y hora formateada
+- Cantidad de items
+- Métodos de pago utilizados
+- Total en soles
+
+**Interacción:**
+- Botón completo (área touch-friendly)
+- Hover: fondo resaltado
+- Click: abre Sheet de detalle
+- Focus visible en navegación por teclado
+
+**Estados:**
+- Loading: 5 skeletons de cards
+- Empty: mensaje con ícono "No hay ventas"
+- Error: alerta con mensaje
+
+### Paginación
+
+**Componente en footer:**
+```
+Página 2 de 5 · 87 ventas        [Anterior] [Siguiente]
+```
+
+**Comportamiento:**
+- "Anterior" disabled en página 1
+- "Siguiente" disabled en última página
+- Muestra info de página actual y total
+- Actualiza URL al cambiar página
+
+---
+
+## Sheet de detalle de venta
+
+### `SaleDetailSheet`
+
+Sheet deslizable desde la derecha con información completa de la venta.
+
+**Dimensiones:**
+- Desktop: max-width 680px
+- Móvil: ancho completo
+- Altura: 100vh con scroll interno
+
+**Header fijo:**
+```
+Venta #123  [✓ Completada]         [Cerrar]
+15 ene 2025, 14:30
+```
+
+Si anulada:
+```
+Venta #123  [✗ Anulada]            [Cerrar]
+15 ene 2025, 14:30 · Anulada el 15 ene, 18:45
+```
+
+**Contenido scrollable:**
+
+1. **Motivo de anulación** (si aplica)
+   ```
+   ┌─ Alert destructive ────────────────┐
+   │ ⚠ Motivo de anulación              │
+   │ Cliente devolvió producto por...   │
+   └────────────────────────────────────┘
+   ```
+
+2. **Sección: Productos**
+   ```
+   Productos
+   
+   ┌────────────────────────────────────┐
+   │ Coca Cola 500ml                    │
+   │ 2 × S/ 3.50                        │
+   │                         S/ 7.00    │
+   └────────────────────────────────────┘
+   
+   ┌────────────────────────────────────┐
+   │ Galletas Oreo                      │
+   │ 1 × S/ 5.50                        │
+   │                         S/ 5.50    │
+   └────────────────────────────────────┘
+   ```
+
+3. **Sección: Pagos**
+   ```
+   Pagos
+   
+   ┌────────────────────────────────────┐
+   │ Efectivo                           │
+   │ Recibido: S/ 20.00 · Vuelto: 7.50  │
+   │                        S/ 12.50    │
+   └────────────────────────────────────┘
+   ```
+
+   Si anulado:
+   ```
+   ┌────────────────────────────────────┐
+   │ Yape  [Anulado]                    │
+   │ Ref: 123456789                     │
+   │                        S/ 15.00    │
+   └────────────────────────────────────┘
+   ```
+
+4. **Totales**
+   ```
+   ┌────────────────────────────────────┐
+   │ Subtotal              S/ 12.50     │
+   │ ───────────────────────────────────│
+   │ Total                 S/ 12.50     │
+   └────────────────────────────────────┘
+   ```
+
+5. **Botón de anulación** (si es elegible)
+   ```
+   [🗙 Anular venta]  (botón rojo ancho completo)
+   ```
+
+6. **Mensaje de inelegibilidad** (si no se puede anular)
+   ```
+   ┌─ Alert ────────────────────────────┐
+   │ ℹ No se puede anular esta venta    │
+   │ Solo puedes anular ventas de la    │
+   │ sesión actual abierta.             │
+   └────────────────────────────────────┘
+   ```
+
+**Accesibilidad:**
+- Focus trap dentro del Sheet
+- Escape cierra el Sheet
+- Botón "Cerrar" siempre visible
+- Contenido scrollable con scrollbar visible
+
+---
+
+## Formulario de anulación
+
+### `VoidSaleForm`
+
+Modal responsive para anular ventas con confirmación explícita.
+
+**Desktop:** Dialog centrado (max 88vh)  
+**Móvil:** Drawer bottom (max 92vh)
+
+**Componente:** `ResponsiveDialogDrawer`
+- Desktop: `<Dialog>` con backdrop oscuro
+- Móvil: `<Drawer>` con swipe handle
+
+### Header fijo
+
+```
+Anular Venta #123
+
+Esta acción no se puede deshacer. La venta se marcará
+como anulada y el stock será devuelto a los productos.
+```
+
+### Contenido scrollable
+
+1. **Advertencias** (Alert destructivo)
+   ```
+   ┌─ Alert border-destructive ─────────┐
+   │ Confirma que:                      │
+   │ • La venta fue registrada por error│
+   │ • Los productos serán devueltos al │
+   │   inventario                       │
+   │ • Los pagos serán marcados como    │
+   │   anulados                         │
+   │ • Esta acción solo es reversible   │
+   │   desde la base de datos           │
+   └────────────────────────────────────┘
+   ```
+
+2. **Campo: Motivo de anulación**
+   ```
+   Motivo de anulación *
+   
+   ┌────────────────────────────────────┐
+   │ Describe por qué se anula esta     │
+   │ venta...                           │
+   │                                    │
+   │                                    │
+   └────────────────────────────────────┘
+   
+   Mínimo 5 caracteres, 0 actual    235 restantes
+   ```
+
+   **Validación en tiempo real:**
+   - Contador de caracteres actuales
+   - Contador de caracteres restantes
+   - Color rojo cuando < 20 restantes
+   - Deshabilita submit si < 5 caracteres
+   - Limita input a 240 caracteres
+
+3. **Espaciador** (h-4)
+   - Asegura que todo el contenido sea scrollable
+
+### Botones de acción (sticky bottom)
+
+```
+                         [Cancelar] [Confirmar anulación]
+```
+
+**Estados:**
+- Normal: "Confirmar anulación"
+- Loading: "Anulando..." (ambos botones disabled)
+- Submit disabled si motivo inválido
+
+**Desktop:**
+- Border top separador
+- Padding superior: 20px (sm:pt-5)
+
+**Móvil:**
+- Border top separador
+- Safe-area padding bottom: `max(1rem, env(safe-area-inset-bottom))`
+
+### Interacciones
+
+**Abrir:**
+- Click botón "Anular venta" en detalle
+- Muestra dialog/drawer con animación
+
+**Cerrar:**
+- Click "Cancelar"
+- Click backdrop (solo desktop)
+- Tecla Escape
+- Submit exitoso (automático)
+
+**Submit:**
+1. Valida longitud del motivo (5-240)
+2. Muestra estado loading
+3. Ejecuta comando `voidSale()`
+4. En éxito:
+   - Toast verde: "Venta anulada"
+   - Cierra modal
+   - Refresca detalle de venta
+   - Callback `onSuccess()`
+5. En error:
+   - Toast rojo con mensaje específico
+   - Mantiene modal abierto
+   - Permite reintentar
+
+### Validaciones visuales
+
+**Motivo válido (≥5 chars):**
+- Botón submit enabled
+- Color normal en contador
+
+**Motivo inválido (<5 chars):**
+- Botón submit disabled
+- Color gris en botón
+
+**Casi al límite (<20 chars restantes):**
+- Color rojo en contador de restantes
+- Advertencia visual pero no bloquea
+
+### Accesibilidad
+
+- Label asociado al textarea
+- Aria-required="true"
+- Aria-describedby para ayuda
+- Focus automático en textarea al abrir
+- Focus trap en modal
+- Escape cierra (si no está enviando)
+- Enter NO envía (permite saltos de línea)
+
+---
+
+## Patrones responsive comunes (Fase 6)
+
+### `ResponsiveDialogDrawer`
+
+Componente reutilizable para modales adaptativos.
+
+**Props:**
+```typescript
+{
+  open: boolean,
+  onOpenChange: (open: boolean) => void,
+  title: string,
+  description: string,
+  children: ReactNode
+}
+```
+
+**Desktop (≥768px):**
+```typescript
+<Dialog>
+  <DialogContent className="flex max-h-[88dvh] flex-col gap-0">
+    <DialogHeader className="shrink-0 border-b">
+      <DialogTitle>{title}</DialogTitle>
+      <DialogDescription>{description}</DialogDescription>
+    </DialogHeader>
+    {children}
+  </DialogContent>
+</Dialog>
+```
+
+**Móvil (<768px):**
+```typescript
+<Drawer showSwipeHandle>
+  <DrawerContent className="max-h-[92dvh]">
+    <DrawerHeader className="text-left">
+      <DrawerTitle>{title}</DrawerTitle>
+      <DrawerDescription>{description}</DrawerDescription>
+    </DrawerHeader>
+    {children}
+  </DrawerContent>
+</Drawer>
+```
+
+**Características:**
+- Detección automática con `useIsMobile()`
+- Header fijo, contenido scrollable, acciones sticky
+- Safe-area handling en iOS
+- Animaciones nativas de cada componente
+
+### Estructura de contenido
+
+**Patrón estándar para hijos:**
+```tsx
+<form className="flex min-h-0 flex-1 flex-col">
+  {/* Contenido scrollable */}
+  <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+    {/* Campos, alertas, etc. */}
+  </div>
+  
+  {/* Botones sticky */}
+  <div className="border-t px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:border-0 sm:px-6 sm:pb-0 sm:pt-5">
+    {/* Botones de acción */}
+  </div>
+</form>
+```
+
+**Clases clave:**
+- `min-h-0`: Permite flexbox contraer
+- `flex-1`: Expande para llenar espacio
+- `overflow-y-auto`: Scroll interno
+- `pb-[max(...)]`: Safe-area en iOS
+- `sm:px-6`: Padding responsivo
+
+---
+
+## Navegación y rutas
+
+**Rutas implementadas:**
+- `/sale` — Punto de venta (Fase 5)
+- `/sales` — Historial de ventas (Fase 6)
+
+**Navegación principal:**
+```
+Sidebar / Bottom Nav:
+- Venta → /sale
+- Ventas → /sales     (NUEVO)
+- Productos → /products
+- Inventario → /inventory
+- Caja → /cash
+- Resumen → /summary
+```
+
+**Flujo de navegación:**
+1. Usuario hace venta en `/sale`
+2. Usuario consulta historial en `/sales`
+3. Usuario abre detalle en Sheet
+4. Usuario anula venta si es elegible
+5. Sheet se cierra, lista se actualiza
+
+---
+
+## Estados y feedback
+
+### Loading states
+
+**Lista de ventas:**
+- 5 `<Skeleton>` de cards con altura fija
+- Sin contenido visible hasta cargar
+
+**Detalle de venta:**
+- Texto: "Cargando venta…" en contenido
+- Mantiene estructura del Sheet
+
+### Empty states
+
+**Sin ventas:**
+```
+       [🛍️ Ícono grande]
+       
+       No hay ventas
+       
+       No se encontraron ventas con
+       los filtros seleccionados
+```
+
+### Error states
+
+**Error de carga:**
+- Alert con mensaje de error
+- Botón "Reintentar"
+- Mantiene filtros aplicados
+
+**Error de anulación:**
+- Toast rojo con mensaje específico
+- Modal permanece abierto
+- Usuario puede corregir y reintentar
+
+### Success feedback
+
+**Venta anulada:**
+- Toast verde: "Venta anulada"
+- Modal se cierra automáticamente
+- Lista se refresca
+- Detalle muestra nuevo estado
+
+---
+
+## Accesibilidad (WCAG 2.1 AA)
+
+### Navegación por teclado
+
+**Historial:**
+- Tab: navega entre filtros, ventas, paginación
+- Enter: abre detalle de venta seleccionada
+- Escape: cierra Sheet de detalle
+
+**Sheet de detalle:**
+- Focus trap: Tab solo dentro del Sheet
+- Escape: cierra Sheet
+- Enter en botón "Anular": abre modal
+
+**Modal de anulación:**
+- Focus automático en textarea
+- Tab: textarea → Cancelar → Confirmar
+- Escape: cierra modal (si no está enviando)
+- Enter: NO envía (permite multiline en textarea)
+
+### ARIA y semántica
+
+**Filtros:**
+```html
+<input aria-label="Buscar venta" />
+<select aria-label="Filtrar por estado" />
+```
+
+**Lista:**
+```html
+<ul role="list">
+  <li role="listitem">
+    <button aria-label="Ver detalle de venta 123">
+      ...
+    </button>
+  </li>
+</ul>
+```
+
+**Sheet:**
+```html
+<div role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+  <h2 id="sheet-title">Venta #123</h2>
+  ...
+</div>
+```
+
+**Modal de anulación:**
+```html
+<textarea
+  id="reason"
+  aria-label="Motivo de anulación"
+  aria-required="true"
+  aria-describedby="reason-help"
+/>
+<div id="reason-help">Mínimo 5 caracteres...</div>
+```
+
+### Contraste y colores
+
+**Estados de venta:**
+- Completada: fondo verde 600 (contraste 4.5:1)
+- Anulada: fondo rojo destructive (contraste 4.5:1)
+
+**Botones:**
+- Primary: contraste mínimo 4.5:1
+- Destructive: contraste mínimo 4.5:1
+- Disabled: contraste 3:1 (permitido)
+
+**Links y botones:**
+- Focus visible: outline 2px
+- Hover: cambio de color perceptible
+
+---
+
+## Pruebas E2E (Fase 6)
+
+### `e2e/sales-history.spec.ts`
+
+**13 tests implementados:**
+
+1. ✅ Renderizado completo de página
+2. ✅ Filtro por estado (Completadas/Anuladas)
+3. ✅ Filtro por método de pago
+4. ✅ Búsqueda por texto con botón
+5. ✅ Búsqueda con tecla Enter
+6. ✅ Estado vacío sin resultados
+7. ✅ Navegación entre páginas
+8. ✅ Abrir Sheet de detalle
+9. ✅ Cerrar Sheet con botón
+10. ✅ Navegación por teclado (Tab, Enter)
+11. ✅ Cerrar con Escape
+12. ✅ Persistencia de filtros en URL
+13. ✅ Badge con total de ventas
+
+**Cobertura:**
+- Renderizado y estructura
+- Interacciones de usuario
+- Estados de loading/empty
+- Accesibilidad por teclado
+- Responsividad (desktop y móvil)
+
+---
+
+## Mejoras futuras
+
+**Historial:**
+- [ ] Filtro por rango de fechas
+- [ ] Filtro por rango de montos
+- [ ] Exportar CSV/Excel
+- [ ] Impresión de comprobantes
+- [ ] Búsqueda avanzada (múltiples criterios)
+
+**Anulación:**
+- [ ] Autorización por supervisor
+- [ ] Anulación parcial de items
+- [ ] Límites de monto sin autorización
+- [ ] Registro de usuario que anuló
+- [ ] Generación de nota de crédito
+
+**UX:**
+- [ ] Infinite scroll en lista
+- [ ] Preview rápido en hover (desktop)
+- [ ] Shortcuts de teclado globales
+- [ ] Modo oscuro
+- [ ] Personalización de columnas visibles

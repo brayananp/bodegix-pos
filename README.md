@@ -1,8 +1,8 @@
 # Bodegix POS
 
-## Estado: Fase 5 ✅
+## Estado: Fase 6 ✅
 
-El módulo de ventas está completo y operativo: carrito persistido, búsqueda de productos por nombre/código/categoría, revisión automática de precios y stock, checkout con pagos mixtos y transacción atómica que coordina ventas, inventario y caja en un solo commit.
+El sistema de ventas está completo con historial y anulación de transacciones: búsqueda y filtrado de ventas históricas, detalle completo de ventas, y anulación compensatoria de ventas con reglas estrictas de sesión de caja.
 
 **PWA offline-first de ventas, caja e inventario para bodegas.**
 
@@ -61,7 +61,21 @@ Sistema de ventas completo:
 - Interfaz responsive (desktop panel dividido, móvil sheet)
 - Pruebas E2E completas en desktop y móvil
 
-**Siguiente fase:** Fase 6 — Módulo reporting + resumen diario
+**Fase 6 — Historial de ventas y anulación de transacciones** ✅
+
+Sistema de historial y anulación de ventas:
+- Historial de ventas con búsqueda y filtros (estado, método de pago, texto)
+- Paginación eficiente (20 ventas por página)
+- Detalle completo de venta en Sheet responsive
+- Anulación compensatoria de ventas (no eliminación física)
+- Validación estricta: solo anular ventas de la sesión de caja actual abierta
+- Devolución automática de stock al inventario
+- Marcado de pagos como anulados
+- Registro de motivo obligatorio (5-240 caracteres)
+- Interfaz responsive con Dialog (desktop) y Drawer (móvil)
+- 13 pruebas E2E completas
+
+**Siguiente fase:** Fase 7 — Módulo reporting + resumen diario
 
 ## Stack tecnológico
 
@@ -184,12 +198,10 @@ El proyecto **contiene:**
   - Interfaz responsive optimizada para desktop y móvil
 
 Todavía **no contiene:**
-- Anulaciones de venta
-- Historial administrativo de ventas
-- Reportes detallados
-- Resumen diario automático
-- Service worker completo
-- Exportación de datos
+- Reportes detallados y análisis
+- Resumen diario automático con cierre de día
+- Service worker completo con sincronización
+- Exportación e importación de datos completa
 
 ## Próximas fases
 
@@ -200,10 +212,11 @@ Todavía **no contiene:**
 | **Fase 3** | Inventario y movimientos de stock ✅ |
 | **Fase 4** | Caja, apertura y movimientos de efectivo ✅ |
 | **Fase 5** | Ventas, carrito y pagos ✅ |
-| Fase 6 | Módulo reporting + resumen diario |
-| Fase 7 | Módulo backup + exportación |
-| Fase 8 | Módulo settings + configuración |
-| Fase 9 | PWA completa + service worker offline |
+| **Fase 6** | Historial de ventas y anulación de transacciones ✅ |
+| Fase 7 | Módulo reporting + resumen diario |
+| Fase 8 | Módulo backup + exportación |
+| Fase 9 | Módulo settings + configuración |
+| Fase 10 | PWA completa + service worker offline |
 
 ## Documentación
 
@@ -216,6 +229,7 @@ Todavía **no contiene:**
 - [Esquema v2](docs/database-schema-v2.md)
 - [Esquema v3](docs/database-schema-v3.md)
 - [Esquema v4](docs/database-schema-v4.md)
+- [Esquema v5](docs/database-schema-v5.md)
 - [Migraciones](docs/database-migrations.md)
 - [Persistencia de almacenamiento](docs/storage-persistence.md)
 - [Módulo de inventario](docs/modules/inventory.md)

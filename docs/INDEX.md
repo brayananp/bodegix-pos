@@ -18,7 +18,8 @@
 | [database-schema-v1.md](./database-schema-v1.md) | Esquema inicial: 9 tablas base (Fase 1-2) |
 | [database-schema-v2.md](./database-schema-v2.md) | Índices de inventario (Fase 3) |
 | [database-schema-v3.md](./database-schema-v3.md) | Snapshot de caja (Fase 4) |
-| [database-schema-v4.md](./database-schema-v4.md) | **Borrador de carrito (Fase 5) — NUEVO** |
+| [database-schema-v4.md](./database-schema-v4.md) | Borrador de carrito (Fase 5) |
+| [database-schema-v5.md](./database-schema-v5.md) | **Anulación de ventas (Fase 6) — NUEVO** |
 | [database-migrations.md](./database-migrations.md) | Estrategia de migraciones y versionado |
 | [storage-persistence.md](./storage-persistence.md) | StorageManager API y prevención de cuota excedida |
 
@@ -49,16 +50,17 @@
 | [ui/cash-ui.md](./ui/cash-ui.md) | Interfaz: estados de sesión, historial, snapshot |
 | [database/cash-integrity.md](./database/cash-integrity.md) | Snapshot de cierre y validaciones |
 
-### Ventas (Fase 5) — ⭐ NUEVO
+### Ventas (Fase 5-6) — ⭐ ACTUALIZADO
 
 | Documento | Descripción |
 |-----------|-------------|
 | [modules/sales.md](./modules/sales.md) | **Descripción del módulo de ventas — ACTUALIZADO** |
-| [use-cases/sales-use-cases.md](./use-cases/sales-use-cases.md) | **Casos de uso: carrito, revisión, completar venta — ACTUALIZADO** |
-| [ui/sale-ui.md](./ui/sale-ui.md) | **Interfaz: responsive, checkout, resultado — ACTUALIZADO** |
+| [use-cases/sales-use-cases.md](./use-cases/sales-use-cases.md) | **Casos de uso: carrito, revisión, completar venta, historial, anulación — ACTUALIZADO** |
+| [ui/sale-ui.md](./ui/sale-ui.md) | **Interfaz: responsive, checkout, historial, anulación — ACTUALIZADO** |
 | [database/sale-integrity.md](./database/sale-integrity.md) | **Integridad transaccional multi-tabla — ACTUALIZADO** |
 | [database/sale-draft.md](./database/sale-draft.md) | **Persistencia del carrito — ACTUALIZADO** |
-| [PHASE-5-SUMMARY.md](./PHASE-5-SUMMARY.md) | **Resumen ejecutivo de Fase 5 — NUEVO** |
+| [PHASE-5-SUMMARY.md](./PHASE-5-SUMMARY.md) | **Resumen ejecutivo de Fase 5** |
+| [PHASE-6-SUMMARY.md](./PHASE-6-SUMMARY.md) | **Resumen ejecutivo de Fase 6 — NUEVO** |
 
 ## 💳 Pagos
 
@@ -133,10 +135,11 @@ Estos documentos son especificaciones iniciales. La **fuente de verdad** es el c
 | **Fase 3** | ✅ Completado | [modules/inventory.md](./modules/inventory.md), [database-schema-v2.md](./database-schema-v2.md) |
 | **Fase 4** | ✅ Completado | [modules/cash.md](./modules/cash.md), [database-schema-v3.md](./database-schema-v3.md) |
 | **Fase 5** | ✅ Completado | [modules/sales.md](./modules/sales.md), [database-schema-v4.md](./database-schema-v4.md), [PHASE-5-SUMMARY.md](./PHASE-5-SUMMARY.md) |
-| Fase 6 | 🔜 Próxima | Reportes y resumen diario |
-| Fase 7 | 📋 Planeada | Backup y exportación |
-| Fase 8 | 📋 Planeada | Settings avanzado |
-| Fase 9 | 📋 Planeada | PWA completa + service worker |
+| **Fase 6** | ✅ Completado | [modules/sales.md](./modules/sales.md), [database-schema-v5.md](./database-schema-v5.md), [PHASE-6-SUMMARY.md](./PHASE-6-SUMMARY.md) |
+| Fase 7 | 🔜 Próxima | Reportes y resumen diario |
+| Fase 8 | 📋 Planeada | Backup y exportación |
+| Fase 9 | 📋 Planeada | Settings avanzado |
+| Fase 10 | 📋 Planeada | PWA completa + service worker |
 
 ## 📚 Guías de lectura recomendadas
 
