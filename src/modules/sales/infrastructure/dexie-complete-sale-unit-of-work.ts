@@ -218,6 +218,8 @@ export class DexieCompleteSaleUnitOfWork implements CompleteSaleUnitOfWork {
 								intent.method === "cash" ? (intent.cashReceivedCents ?? intent.amountCents) : null,
 							changeCents,
 							verifiedAt: now,
+							voidedAt: null,
+							voidOperationReference: null,
 							createdAt: now,
 						});
 

@@ -43,6 +43,8 @@ export const salePaymentRecordSchema = z.object({
 	cashReceivedCents: persistedNonNegativeIntegerSchema.nullable(),
 	changeCents: persistedNonNegativeIntegerSchema.nullable(),
 	verifiedAt: persistedTimestampSchema,
+	voidedAt: persistedTimestampSchema.nullable(),
+	voidOperationReference: z.string().trim().min(1).nullable(),
 	createdAt: persistedTimestampSchema,
 });
 

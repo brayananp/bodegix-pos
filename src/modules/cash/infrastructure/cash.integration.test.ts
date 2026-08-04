@@ -1,10 +1,10 @@
-import "fake-indexeddb/auto";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	BodegixDatabase,
 	type SalePaymentRecord,
 	type SaleRecord,
 } from "@/shared/infrastructure/local-db";
+import "fake-indexeddb/auto";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	closeCashSession,
 	openCashSession,
@@ -184,6 +184,8 @@ describe("caja Dexie", () => {
 			operationReference: null,
 			changeCents: null,
 			verifiedAt: 2_010,
+			voidedAt: null,
+			voidOperationReference: null,
 			createdAt: 2_010,
 		};
 		const payments: SalePaymentRecord[] = [
