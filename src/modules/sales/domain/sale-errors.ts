@@ -17,7 +17,13 @@ export type SaleErrorCode =
 	| "INVALID_OPERATION_REFERENCE"
 	| "SALE_NUMBER_INVALID"
 	| "SALE_NUMBER_CONFLICT"
-	| "SALE_PERSISTENCE_FAILED";
+	| "SALE_PERSISTENCE_FAILED"
+	| "SALE_NOT_FOUND"
+	| "SALE_ALREADY_VOIDED"
+	| "SALE_SESSION_CLOSED"
+	| "SALE_SESSION_MISMATCH"
+	| "INVALID_VOID_REASON"
+	| "VOID_PERSISTENCE_FAILED";
 
 const MESSAGES: Record<SaleErrorCode, string> = {
 	SALE_DRAFT_EMPTY: "El carrito está vacío.",
@@ -42,6 +48,12 @@ const MESSAGES: Record<SaleErrorCode, string> = {
 	SALE_NUMBER_INVALID: "El correlativo de venta no es válido.",
 	SALE_NUMBER_CONFLICT: "El correlativo de venta ya fue utilizado.",
 	SALE_PERSISTENCE_FAILED: "No se pudo guardar la venta.",
+	SALE_NOT_FOUND: "No se encontró la venta.",
+	SALE_ALREADY_VOIDED: "Esta venta ya fue anulada.",
+	SALE_SESSION_CLOSED: "Solo puedes anular ventas de la sesión de caja abierta.",
+	SALE_SESSION_MISMATCH: "Esta venta pertenece a otra sesión de caja.",
+	INVALID_VOID_REASON: "El motivo de anulación debe tener entre 5 y 240 caracteres.",
+	VOID_PERSISTENCE_FAILED: "No se pudo anular la venta.",
 };
 
 export class SaleError extends Error {

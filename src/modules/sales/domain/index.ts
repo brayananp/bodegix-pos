@@ -6,3 +6,5 @@ export * from "./sale-item";
 export * from "./sale-payment";
 export * from "./sale-rules";
 export * from "./sale-totals";
+export * from "./sale-void-eligibility";
+export * from "./sale-void-rules";
