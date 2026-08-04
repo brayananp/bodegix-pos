@@ -1,9 +1,10 @@
+import "fake-indexeddb/auto";
+
 import {
 	BodegixDatabase,
 	type SalePaymentRecord,
 	type SaleRecord,
 } from "@/shared/infrastructure/local-db";
-import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	closeCashSession,
