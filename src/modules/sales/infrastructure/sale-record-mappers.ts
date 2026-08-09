@@ -32,6 +32,8 @@ export function salePaymentFromRecord(record: SalePaymentRecord): SalePayment {
 		cashReceivedCents: record.cashReceivedCents,
 		changeCents: record.changeCents,
 		verifiedAt: record.verifiedAt,
+		voidedAt: record.voidedAt,
+		voidOperationReference: record.voidOperationReference,
 		createdAt: record.createdAt,
 	};
 }

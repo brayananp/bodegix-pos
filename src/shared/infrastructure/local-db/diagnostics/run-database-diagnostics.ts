@@ -1,7 +1,7 @@
 import type { BodegixDatabase } from "../bodegix-database";
 import { LocalDatabaseError } from "../database-errors";
 import { appSettingsRecordSchema } from "../records";
-import { DATABASE_SCHEMA_VERSION, SCHEMA_V4 } from "../schema";
+import { DATABASE_SCHEMA_VERSION, SCHEMA_V6 } from "../schema";
 import type {
 	DatabaseDiagnosticCheck,
 	DatabaseDiagnosticReport,
@@ -327,17 +327,20 @@ async function inventoryLedgerCheck(database: BodegixDatabase): Promise<Database
 }
 
 async function saleIntegrityCheck(database: BodegixDatabase): Promise<DatabaseDiagnosticCheck> {
-	const [sales, saleItems, salePayments, inventoryMovements, settings, draft] = await Promise.all([
-		database.sales.toArray(),
-		database.saleItems.toArray(),
-		database.salePayments.toArray(),
-		database.inventoryMovements.toArray(),
-		database.appSettings.get("main"),
-		database.saleDrafts.get("main"),
-	]);
+	const [sales, saleItems, salePayments, inventoryMovements, cashSessions, settings, draft] =
+		await Promise.all([
+			database.sales.toArray(),
+			database.saleItems.toArray(),
+			database.salePayments.toArray(),
+			database.inventoryMovements.toArray(),
+			database.cashSessions.toArray(),
+			database.appSettings.get("main"),
+			database.saleDrafts.get("main"),
+		]);
 
 	const issues: Array<{ saleId: string | null; detail: string }> = [];
 	const saleIds = new Set(sales.map((s) => s.id));
+	const sessionsById = new Map(cashSessions.map((session) => [session.id, session]));
 	const saleNumbers = new Set<number>();
 
 	for (const sale of sales) {
@@ -351,9 +354,16 @@ async function saleIntegrityCheck(database: BodegixDatabase): Promise<DatabaseDi
 		if (sale.subtotalCents !== sale.totalCents) {
 			issues.push({ saleId: sale.id, detail: "subtotalCents !== totalCents." });
 		}
-		if (sale.status === "completed" && (sale.voidedAt !== null || sale.voidReason !== null)) {
+		if (sale.status === "completed" && (sale.voidedAt !== null || sale.voidReason !== null))
 			issues.push({ saleId: sale.id, detail: "Venta completada con campos de anulación." });
-		}
+		if (
+			sale.status === "voided" &&
+			(sale.voidedAt === null ||
+				sale.voidReason === null ||
+				sale.voidReason.trim().length < 5 ||
+				sale.voidReason.trim().length > 240)
+		)
+			issues.push({ saleId: sale.id, detail: "Venta anulada sin motivo o timestamp válido." });
 	}
 
 	const itemsBySale = new Map<string, typeof saleItems>();
@@ -382,22 +392,15 @@ async function saleIntegrityCheck(database: BodegixDatabase): Promise<DatabaseDi
 		paymentsBySale.set(payment.saleId, group);
 
 		if (payment.method === "cash") {
-			if (payment.status !== "confirmed") {
-				issues.push({ saleId: payment.saleId, detail: "Pago en efectivo sin estado confirmado." });
-			}
 			if (payment.cashReceivedCents === null || payment.changeCents === null) {
 				issues.push({ saleId: payment.saleId, detail: "Pago en efectivo sin recibido o vuelto." });
 			} else if (payment.changeCents !== payment.cashReceivedCents - payment.amountCents) {
 				issues.push({ saleId: payment.saleId, detail: "Vuelto incorrecto en efectivo." });
 			}
-		} else if (
-			payment.cashReceivedCents !== null ||
-			payment.changeCents !== null ||
-			payment.status !== "manually_verified"
-		) {
+		} else if (payment.cashReceivedCents !== null || payment.changeCents !== null) {
 			issues.push({
 				saleId: payment.saleId,
-				detail: "Pago externo con datos de efectivo o sin verificación.",
+				detail: "Pago externo con datos de efectivo.",
 			});
 		}
 	}
@@ -423,19 +426,86 @@ async function saleIntegrityCheck(database: BodegixDatabase): Promise<DatabaseDi
 			issues.push({ saleId: sale.id, detail: "Métodos de pago duplicados." });
 		}
 
-		const saleMovements = inventoryMovements.filter(
-			(m) => m.referenceType === "sale" && m.referenceId === sale.id,
-		);
-		if (sale.status === "completed" && saleMovements.length !== items.length) {
+		const originalMovements = inventoryMovements
+			.filter((m) => m.referenceType === "sale" && m.referenceId === sale.id)
+			.filter((movement) => movement.type === "sale");
+		const voidMovements = inventoryMovements
+			.filter((movement) => movement.referenceType === "sale" && movement.referenceId === sale.id)
+			.filter((movement) => movement.type === "sale_void");
+		if (originalMovements.length !== items.length) {
 			issues.push({ saleId: sale.id, detail: "Faltan movimientos de inventario por venta." });
 		}
-		for (const movement of saleMovements) {
+		for (const movement of originalMovements) {
 			const item = items.find((i) => i.productId === movement.productId);
 			if (!item || movement.quantityDelta !== -item.quantity) {
 				issues.push({
 					saleId: sale.id,
 					detail: "Delta de movimiento no coincide con cantidad vendida.",
 				});
+			}
+		}
+
+		if (sale.status === "completed") {
+			if (
+				payments.some(
+					(payment) =>
+						(payment.method === "cash" && payment.status !== "confirmed") ||
+						(payment.method !== "cash" && payment.status !== "manually_verified"),
+				)
+			)
+				issues.push({ saleId: sale.id, detail: "Venta completada con estado de pago inválido." });
+			if (
+				payments.some(
+					(payment) => payment.voidedAt !== null || payment.voidOperationReference !== null,
+				)
+			)
+				issues.push({ saleId: sale.id, detail: "Pago activo con campos de anulación." });
+			if (voidMovements.length > 0)
+				issues.push({ saleId: sale.id, detail: "Venta completada con restauraciones de stock." });
+		}
+
+		if (sale.status === "voided") {
+			const session = sessionsById.get(sale.cashSessionId);
+			if (!session) issues.push({ saleId: sale.id, detail: "Sesión original inexistente." });
+			if (
+				sale.voidedAt !== null &&
+				session &&
+				(sale.voidedAt < session.openedAt ||
+					(session.closedAt !== null && sale.voidedAt > session.closedAt))
+			)
+				issues.push({ saleId: sale.id, detail: "Anulación fuera de la sesión original." });
+			for (const payment of payments) {
+				if (payment.status !== "voided" || payment.voidedAt !== sale.voidedAt)
+					issues.push({ saleId: sale.id, detail: "Pago no anulado junto con la venta." });
+				if (payment.method === "cash" && payment.voidOperationReference !== null)
+					issues.push({ saleId: sale.id, detail: "Efectivo con referencia de reversión." });
+				if (
+					payment.voidOperationReference !== null &&
+					(payment.voidOperationReference.length > 80 ||
+						!/^[\p{L}\p{N}\s._#/-]+$/u.test(payment.voidOperationReference))
+				)
+					issues.push({ saleId: sale.id, detail: "Referencia de reversión inválida." });
+			}
+
+			const quantitiesByProduct = new Map<string, number>();
+			for (const item of items)
+				quantitiesByProduct.set(
+					item.productId,
+					(quantitiesByProduct.get(item.productId) ?? 0) + item.quantity,
+				);
+			if (voidMovements.length !== quantitiesByProduct.size)
+				issues.push({ saleId: sale.id, detail: "Cantidad incorrecta de restauraciones." });
+			for (const [productId, quantity] of quantitiesByProduct) {
+				const matches = voidMovements.filter((movement) => movement.productId === productId);
+				const movement = matches[0];
+				if (
+					matches.length !== 1 ||
+					!movement ||
+					movement.quantityDelta !== quantity ||
+					movement.reason !== sale.voidReason ||
+					movement.createdAt !== sale.voidedAt
+				)
+					issues.push({ saleId: sale.id, detail: "Restauración de inventario inconsistente." });
 			}
 		}
 	}
@@ -544,7 +614,7 @@ export async function runDatabaseDiagnostics(
 					},
 		);
 
-		const expectedTables = Object.keys(SCHEMA_V4).sort();
+		const expectedTables = Object.keys(SCHEMA_V6).sort();
 		const actualTables = database.tables.map(({ name }) => name).sort();
 		const missingTables = expectedTables.filter((name) => !actualTables.includes(name));
 		checks.push(

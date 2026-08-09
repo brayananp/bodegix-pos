@@ -1,8 +1,13 @@
-import type { BodegixDatabase } from "@/shared/infrastructure/local-db";
+import type { BodegixDatabase, ProductRecord } from "@/shared/infrastructure/local-db";
 import { nowTimestamp } from "@/shared/kernel/dates";
 import { createId } from "@/shared/kernel/ids";
 import type { VoidSaleInput, VoidSaleResult, VoidSaleUnitOfWork } from "../application";
-import { SaleError, checkSaleVoidEligibility } from "../domain";
+import {
+	SaleError,
+	checkSaleVoidEligibility,
+	normalizeVoidReason,
+	validatePaymentReversals,
+} from "../domain";
 
 interface Dependencies {
 	createId(): string;
@@ -11,15 +16,6 @@ interface Dependencies {
 
 const defaults: Dependencies = { createId, now: nowTimestamp };
 
-/**
- * Implementación Dexie del Unit of Work para anulación de ventas.
- *
- * Ejecuta transacción ACID que:
- * - Marca venta como anulada
- * - Marca pagos como anulados
- * - Devuelve stock a productos
- * - Registra movimientos compensatorios de inventario
- */
 export class DexieVoidSaleUnitOfWork implements VoidSaleUnitOfWork {
 	constructor(
 		private readonly database: BodegixDatabase,
@@ -27,9 +23,7 @@ export class DexieVoidSaleUnitOfWork implements VoidSaleUnitOfWork {
 	) {}
 
 	async execute(input: VoidSaleInput): Promise<VoidSaleResult> {
-		const { saleId, reason } = input;
-		const now = this.deps.now();
-
+		const reason = normalizeVoidReason(input.reason);
 		try {
 			return await this.database.transaction(
 				"rw",
@@ -37,117 +31,131 @@ export class DexieVoidSaleUnitOfWork implements VoidSaleUnitOfWork {
 					this.database.sales,
 					this.database.saleItems,
 					this.database.salePayments,
+					this.database.cashSessions,
 					this.database.products,
 					this.database.inventoryMovements,
-					this.database.cashSessions,
 				],
 				async () => {
-					// 1. Cargar venta
-					const sale = await this.database.sales.get(saleId);
-					if (!sale) {
-						throw new SaleError("SALE_NOT_FOUND");
-					}
+					const sale = await this.database.sales.get(input.saleId);
+					if (!sale) throw new SaleError("SALE_NOT_FOUND");
+					if (sale.status === "voided") throw new SaleError("SALE_ALREADY_VOIDED");
 
-					// 2. Cargar sesión de caja actual
-					const currentSession = await this.database.cashSessions
-						.where("status")
-						.equals("open")
-						.first();
+					const [session, openSessions, items, payments] = await Promise.all([
+						this.database.cashSessions.get(sale.cashSessionId),
+						this.database.cashSessions.where("status").equals("open").toArray(),
+						this.database.saleItems.where("saleId").equals(sale.id).toArray(),
+						this.database.salePayments.where("saleId").equals(sale.id).toArray(),
+					]);
 
-					// 3. Verificar elegibilidad
 					const eligibility = checkSaleVoidEligibility({
 						saleStatus: sale.status,
+						saleVoidedAt: sale.voidedAt,
+						saleVoidReason: sale.voidReason,
 						saleCashSessionId: sale.cashSessionId,
-						currentCashSessionId: currentSession?.id ?? null,
-						isCurrentSessionOpen: currentSession?.status === "open",
+						originalSessionExists: session !== undefined,
+						originalSessionStatus: session?.status ?? null,
+						openSessionIds: openSessions.map(({ id }) => id),
+						hasItems: items.length > 0,
+						hasPayments: payments.length > 0,
 					});
 
-					if (!eligibility.canVoid) {
-						switch (eligibility.reason) {
-							case "ALREADY_VOIDED":
-								throw new SaleError("SALE_ALREADY_VOIDED");
-							case "SESSION_CLOSED":
-								throw new SaleError("SALE_SESSION_CLOSED");
-							case "SESSION_MISMATCH":
-								throw new SaleError("SALE_SESSION_MISMATCH");
-							default:
-								throw new SaleError("VOID_PERSISTENCE_FAILED");
-						}
+					if (items.length === 0) throw new SaleError("SALE_ITEM_MISSING");
+					if (payments.length === 0) throw new SaleError("SALE_PAYMENT_MISSING");
+					if (!eligibility.eligible) this.throwEligibilityError(eligibility.reason);
+
+					const reversalReferences = validatePaymentReversals(
+						input.paymentReversals,
+						payments.map(({ id }) => id),
+					);
+					const quantitiesByProduct = new Map<string, number>();
+					for (const item of items) {
+						quantitiesByProduct.set(
+							item.productId,
+							(quantitiesByProduct.get(item.productId) ?? 0) + item.quantity,
+						);
 					}
 
-					// 4. Marcar venta como anulada
-					await this.database.sales.update(saleId, {
-						status: "voided",
-						voidedAt: now,
-						voidReason: reason.trim(),
-					});
+					const productIds = [...quantitiesByProduct.keys()];
+					const productRecords = await this.database.products.bulkGet(productIds);
+					const products = new Map<string, ProductRecord>();
+					for (let index = 0; index < productIds.length; index += 1) {
+						const productId = productIds[index];
+						const product = productRecords[index];
+						if (!productId) throw new SaleError("SALE_PRODUCT_MISSING");
+						if (!product) throw new SaleError("SALE_PRODUCT_MISSING", { productId });
+						products.set(productId, product);
+					}
 
-					// 5. Marcar todos los pagos como anulados
-					const payments = await this.database.salePayments
-						.where("saleId")
-						.equals(saleId)
-						.toArray();
+					const voidedAt = Math.max(this.deps.now(), sale.createdAt + 1, session?.openedAt ?? 0);
+					for (const [productId, quantity] of quantitiesByProduct) {
+						const product = products.get(productId);
+						if (!product) throw new SaleError("SALE_PRODUCT_MISSING", { productId });
+						const stockAfter = product.stockQuantity + quantity;
+						if (!Number.isSafeInteger(stockAfter))
+							throw new SaleError("SALE_VOID_PERSISTENCE_FAILED");
+
+						await this.database.products.update(productId, {
+							stockQuantity: stockAfter,
+							updatedAt: voidedAt,
+						});
+						await this.database.inventoryMovements.add({
+							id: this.deps.createId(),
+							productId,
+							type: "sale_void",
+							quantityDelta: quantity,
+							stockBefore: product.stockQuantity,
+							stockAfter,
+							referenceType: "sale",
+							referenceId: sale.id,
+							reason,
+							createdAt: voidedAt,
+						});
+					}
 
 					for (const payment of payments) {
 						await this.database.salePayments.update(payment.id, {
 							status: "voided",
-							voidedAt: now,
+							voidedAt,
+							voidOperationReference:
+								payment.method === "cash" ? null : (reversalReferences.get(payment.id) ?? null),
 						});
 					}
-
-					// 6. Cargar items de la venta
-					const saleItems = await this.database.saleItems.where("saleId").equals(saleId).toArray();
-
-					// 7. Devolver stock y registrar movimientos compensatorios
-					let itemsRestored = 0;
-					for (const item of saleItems) {
-						const product = await this.database.products.get(item.productId);
-						if (!product) {
-							// Producto eliminado - continuamos sin devolver stock
-							continue;
-						}
-
-						const stockBefore = product.stockQuantity;
-						const stockAfter = stockBefore + item.quantity;
-
-						// Actualizar stock del producto
-						await this.database.products.update(item.productId, {
-							stockQuantity: stockAfter,
-							updatedAt: now,
-						});
-
-						// Registrar movimiento compensatorio de inventario
-						await this.database.inventoryMovements.add({
-							id: this.deps.createId(),
-							productId: item.productId,
-							type: "sale_void",
-							quantityDelta: item.quantity,
-							stockBefore,
-							stockAfter,
-							referenceType: "sale",
-							referenceId: saleId,
-							reason: `Anulación de venta #${sale.saleNumber}`,
-							createdAt: now,
-						});
-
-						itemsRestored += item.quantity;
-					}
+					await this.database.sales.update(sale.id, {
+						status: "voided",
+						voidedAt,
+						voidReason: reason,
+					});
 
 					return {
-						saleId,
+						saleId: sale.id,
 						saleNumber: sale.saleNumber,
-						voidedAt: now,
-						cashSessionId: sale.cashSessionId,
 						totalCents: sale.totalCents,
-						itemsRestored,
+						restoredItemCount: items.length,
+						restoredUnitCount: items.reduce((sum, item) => sum + item.quantity, 0),
+						paymentReversals: payments.map((payment) => ({
+							method: payment.method,
+							amountCents: payment.amountCents,
+							reversalReference:
+								payment.method === "cash" ? null : (reversalReferences.get(payment.id) ?? null),
+						})),
+						cashSessionId: sale.cashSessionId,
+						voidedAt,
+						reason,
 					};
 				},
 			);
 		} catch (error) {
-			if (error instanceof SaleError) {
-				throw error;
-			}
-			throw new SaleError("VOID_PERSISTENCE_FAILED", { cause: error });
+			if (error instanceof SaleError) throw error;
+			throw new SaleError("SALE_VOID_PERSISTENCE_FAILED", { cause: error });
 		}
+	}
+
+	private throwEligibilityError(reason: string | null): never {
+		if (reason === "SALE_ALREADY_VOIDED") throw new SaleError("SALE_ALREADY_VOIDED");
+		if (reason === "CASH_SESSION_NOT_FOUND") throw new SaleError("SALE_CASH_SESSION_NOT_FOUND");
+		if (reason === "CASH_SESSION_CLOSED") throw new SaleError("SALE_CASH_SESSION_CLOSED");
+		if (reason === "DIFFERENT_OPEN_SESSION") throw new SaleError("SALE_CASH_SESSION_CHANGED");
+		if (reason === "SALE_DATA_INCONSISTENT") throw new SaleError("SALE_VOID_NOT_ALLOWED");
+		throw new SaleError("SALE_VOID_NOT_ALLOWED");
 	}
 }

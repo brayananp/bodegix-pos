@@ -1,81 +1,53 @@
-import type { SaleStatus } from "@/shared/infrastructure/local-db/records";
+import type { SaleStatus } from "./sale";
 
-/**
- * Resultado de la verificación de elegibilidad para anular una venta.
- */
+export type SaleVoidIneligibilityReason =
+	| "SALE_NOT_FOUND"
+	| "SALE_ALREADY_VOIDED"
+	| "CASH_SESSION_NOT_FOUND"
+	| "CASH_SESSION_CLOSED"
+	| "DIFFERENT_OPEN_SESSION"
+	| "SALE_DATA_INCONSISTENT";
+
 export interface SaleVoidEligibility {
-	/** Si la venta puede ser anulada */
-	readonly canVoid: boolean;
-	/** Código de la razón por la que no puede ser anulada */
-	readonly reason?: "ALREADY_VOIDED" | "SESSION_CLOSED" | "SESSION_MISMATCH";
-	/** Si la venta pertenece a la sesión de caja actual */
-	readonly isSameSession: boolean;
-	/** Si la sesión de caja está abierta */
-	readonly isSessionOpen: boolean;
+	readonly eligible: boolean;
+	readonly reason: SaleVoidIneligibilityReason | null;
 }
 
-/**
- * Información necesaria para determinar elegibilidad de anulación.
- */
 export interface SaleVoidContext {
-	/** Estado actual de la venta */
 	saleStatus: SaleStatus;
-	/** ID de sesión de caja de la venta */
+	saleVoidedAt: number | null;
+	saleVoidReason: string | null;
 	saleCashSessionId: string;
-	/** ID de la sesión de caja actual (abierta) */
-	currentCashSessionId: string | null;
-	/** Si la sesión de caja actual está abierta */
-	isCurrentSessionOpen: boolean;
+	originalSessionExists: boolean;
+	originalSessionStatus: "open" | "closed" | null;
+	openSessionIds: readonly string[];
+	hasItems: boolean;
+	hasPayments: boolean;
 }
 
-/**
- * Determina si una venta puede ser anulada según las reglas de negocio.
- *
- * Reglas:
- * - La venta NO debe estar ya anulada
- * - La venta DEBE pertenecer a la sesión de caja actualmente abierta
- * - La sesión de caja DEBE estar abierta
- *
- * @param context - Información de la venta y sesión actual
- * @returns Resultado de elegibilidad con detalles
- */
 export function checkSaleVoidEligibility(context: SaleVoidContext): SaleVoidEligibility {
-	const { saleStatus, saleCashSessionId, currentCashSessionId, isCurrentSessionOpen } = context;
-
-	// Venta ya anulada
-	if (saleStatus === "voided") {
-		return {
-			canVoid: false,
-			reason: "ALREADY_VOIDED",
-			isSameSession: saleCashSessionId === currentCashSessionId,
-			isSessionOpen: isCurrentSessionOpen,
-		};
+	if (context.saleStatus === "voided") {
+		return { eligible: false, reason: "SALE_ALREADY_VOIDED" };
 	}
-
-	// Sesión cerrada
-	if (!isCurrentSessionOpen || currentCashSessionId === null) {
-		return {
-			canVoid: false,
-			reason: "SESSION_CLOSED",
-			isSameSession: false,
-			isSessionOpen: false,
-		};
+	if (
+		context.saleVoidedAt !== null ||
+		context.saleVoidReason !== null ||
+		!context.hasItems ||
+		!context.hasPayments
+	) {
+		return { eligible: false, reason: "SALE_DATA_INCONSISTENT" };
 	}
-
-	// Venta de otra sesión
-	if (saleCashSessionId !== currentCashSessionId) {
-		return {
-			canVoid: false,
-			reason: "SESSION_MISMATCH",
-			isSameSession: false,
-			isSessionOpen: isCurrentSessionOpen,
-		};
+	if (!context.originalSessionExists) {
+		return { eligible: false, reason: "CASH_SESSION_NOT_FOUND" };
 	}
-
-	// Elegible para anulación
-	return {
-		canVoid: true,
-		isSameSession: true,
-		isSessionOpen: true,
-	};
+	if (context.originalSessionStatus !== "open") {
+		return { eligible: false, reason: "CASH_SESSION_CLOSED" };
+	}
+	if (
+		context.openSessionIds.length !== 1 ||
+		context.openSessionIds[0] !== context.saleCashSessionId
+	) {
+		return { eligible: false, reason: "DIFFERENT_OPEN_SESSION" };
+	}
+	return { eligible: true, reason: null };
 }

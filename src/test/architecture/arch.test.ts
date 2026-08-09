@@ -561,3 +561,84 @@ describe("Arquitectura — módulos tienen API pública (index.ts)", () => {
 		expect(missing, `Módulos sin index.ts: ${missing.join(", ")}`).toHaveLength(0);
 	});
 });
+
+describe("Arquitectura — historial y anulación de ventas", () => {
+	const productionFiles = (directory: string) =>
+		collectFiles(directory).filter(
+			(file) => !file.endsWith(".test.ts") && !file.endsWith(".test.tsx"),
+		);
+
+	it("dominio y aplicación de sales permanecen puros", () => {
+		const files = [
+			...productionFiles(join(SRC, "modules/sales/domain")),
+			...productionFiles(join(SRC, "modules/sales/application")),
+		];
+		const violations = files.flatMap((file) =>
+			getImports(file)
+				.filter(
+					(moduleName) =>
+						moduleName === "react" ||
+						moduleName.startsWith("@tanstack/") ||
+						moduleName.startsWith("dexie") ||
+						moduleName.includes("/ui"),
+				)
+				.map((moduleName) => `${relative(SRC, file)}: importa "${moduleName}"`),
+		);
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("la UI de sales no accede a Dexie, tablas ni mutaciones de stock", () => {
+		const violations: string[] = [];
+		for (const file of productionFiles(join(SRC, "modules/sales/ui"))) {
+			const content = readFileSync(file, "utf-8");
+			const imports = getImports(file);
+			const isHook = file.includes(join("sales", "ui", "hooks"));
+			const importsDatabase =
+				!isHook &&
+				imports.some(
+					(moduleName) => moduleName.includes("local-db") || moduleName.startsWith("dexie"),
+				);
+			const mutatesTables =
+				/\.(?:products|inventoryMovements)\.(?:add|bulkAdd|put|bulkPut|update|delete|bulkDelete|clear)\s*\(/.test(
+					content,
+				);
+			if (importsDatabase || mutatesTables) violations.push(relative(SRC, file));
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("solo la unidad de trabajo autorizada escribe el estado voided", () => {
+		const allowed = join("sales", "infrastructure", "dexie-void-sale-unit-of-work.ts");
+		const violations: string[] = [];
+		for (const file of productionFiles(SRC)) {
+			const content = readFileSync(file, "utf-8");
+			if (/\.(?:sales|salePayments)\.update\([\s\S]{0,250}status:\s*"voided"/.test(content)) {
+				if (!file.endsWith(allowed)) violations.push(relative(SRC, file));
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("la anulación no elimina históricos ni crea movimientos de caja", () => {
+		const file = join(SRC, "modules/sales/infrastructure/dexie-void-sale-unit-of-work.ts");
+		const content = readFileSync(file, "utf-8");
+		expect(content).not.toMatch(
+			/\.(?:sales|saleItems|salePayments)\.(?:delete|clear|bulkDelete)\s*\(/,
+		);
+		expect(content).not.toContain("cashMovements");
+		expect(content).toContain('type: "sale_void"');
+	});
+
+	it("formularios compartidos e inventory no dependen de sales", () => {
+		const files = [
+			...productionFiles(join(SRC, "shared/ui/forms")),
+			...productionFiles(join(SRC, "modules/inventory")),
+		];
+		const violations = files.flatMap((file) =>
+			getImports(file)
+				.filter((moduleName) => moduleName.includes("modules/sales"))
+				.map((moduleName) => `${relative(SRC, file)}: importa "${moduleName}"`),
+		);
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+});

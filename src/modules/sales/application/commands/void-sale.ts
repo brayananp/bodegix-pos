@@ -1,4 +1,4 @@
-import { validateVoidReason } from "../../domain";
+import { normalizeVoidReason } from "../../domain";
 import type { VoidSaleInput, VoidSaleResult, VoidSaleUnitOfWork } from "../ports";
 
 /**
@@ -18,7 +18,7 @@ export async function voidSale(
 	input: VoidSaleInput,
 ): Promise<VoidSaleResult> {
 	// Validar motivo de anulación
-	validateVoidReason(input.reason);
+	normalizeVoidReason(input.reason);
 
 	// Delegar al Unit of Work (incluye todas las validaciones de estado y transacción)
 	return unitOfWork.execute(input);

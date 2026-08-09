@@ -9,7 +9,8 @@ import {
 	registerSchemaV1,
 	registerSchemaV2,
 	registerSchemaV3,
-	SCHEMA_V4,
+	registerSchemaV4,
+	SCHEMA_V6,
 } from "./schema";
 
 let database: BodegixDatabase | undefined;
@@ -34,7 +35,7 @@ describe("Dexie e IndexedDB", () => {
 		await db.open();
 
 		expect(db.verno).toBe(DATABASE_SCHEMA_VERSION);
-		expect(db.tables.map(({ name }) => name).sort()).toEqual(Object.keys(SCHEMA_V4).sort());
+		expect(db.tables.map(({ name }) => name).sort()).toEqual(Object.keys(SCHEMA_V6).sort());
 		expect(db.categories.schema.indexes.map(({ name }) => name)).toEqual([
 			"normalizedName",
 			"isActive",
@@ -70,6 +71,7 @@ describe("Dexie e IndexedDB", () => {
 				"cashSessionId",
 				"status",
 				"createdAt",
+				"totalCents",
 				"[status+createdAt]",
 				"[cashSessionId+createdAt]",
 			],
@@ -196,6 +198,39 @@ describe("Dexie e IndexedDB", () => {
 		expect(database.saleDrafts.schema.indexes.map(({ name }) => name)).toEqual(["updatedAt"]);
 		expect(await database.saleDrafts.count()).toBe(0);
 		expect(await database.products.get("product-v3")).toMatchObject({ stockQuantity: 4 });
+	});
+
+	it("migra pagos v4 a v5 inicializando los campos de anulación sin alterar importes", async () => {
+		const databaseName = `bodegix-sale-void-migration-${crypto.randomUUID()}`;
+		const legacy = new Dexie(databaseName);
+		registerSchemaV1(legacy);
+		registerSchemaV2(legacy);
+		registerSchemaV3(legacy);
+		registerSchemaV4(legacy);
+		await legacy.open();
+		await legacy.table("salePayments").add({
+			id: "payment-v4",
+			saleId: "sale-v4",
+			method: "cash",
+			amountCents: 1_500,
+			status: "confirmed",
+			providerLabel: null,
+			operationReference: null,
+			cashReceivedCents: 2_000,
+			changeCents: 500,
+			verifiedAt: 10,
+			createdAt: 10,
+		});
+		legacy.close();
+
+		database = new BodegixDatabase(databaseName);
+		await database.open();
+		expect(database.verno).toBe(6);
+		expect(await database.salePayments.get("payment-v4")).toMatchObject({
+			amountCents: 1_500,
+			voidedAt: null,
+			voidOperationReference: null,
+		});
 	});
 
 	it("crea appSettings/main y conserva installationId y nextSaleNumber", async () => {

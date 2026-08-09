@@ -12,6 +12,8 @@ export interface SalePayment {
 	cashReceivedCents: number | null;
 	changeCents: number | null;
 	verifiedAt: number;
+	voidedAt: number | null;
+	voidOperationReference: string | null;
 	createdAt: number;
 }
 
