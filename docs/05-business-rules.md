@@ -239,3 +239,9 @@ Una jornada de caja puede cruzar medianoche; el resumen de caja se basa en su se
 Solo existe 0 o 1 caja abierta. El esperado es inicial + ventas en efectivo + depósitos − retiros.
 La diferencia es contado − esperado. Sesiones cerradas y movimientos son inmutables; pagos
 digitales no afectan efectivo físico.
+
+## Anulación
+
+Una venta solo se anula completa, durante su única sesión original todavía abierta. Se exige motivo
+y confirmación por cada pago. Ítems, totales, correlativo y movimientos originales son inmutables;
+la caja excluye venta/pagos anulados y no registra un retiro ficticio.

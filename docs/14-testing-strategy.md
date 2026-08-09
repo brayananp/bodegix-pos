@@ -232,3 +232,9 @@ pnpm e2e:full          # playwright full suite
 Vitest cubre cálculos, reglas, mapeadores, formularios, componentes, arquitectura, migración,
 diagnóstico y transacciones. Playwright ejecuta el ciclo completo de caja en escritorio y móvil,
 incluidos descarte, botón atrás, recarga y ausencia de errores de consola.
+
+## Matriz Fase 6
+
+Unitarias: elegibilidad, motivo, confirmaciones, mapeo y URL. Integración: historial, snapshots,
+pagos, stock, caja, rollback, concurrencia, migración y diagnóstico. Arquitectura: pureza, API
+pública y escritor único. Componentes/E2E: Sheet, navegación, responsive, accesibilidad y recarga.

@@ -822,7 +822,7 @@ Componente reutilizable para modales adaptativos.
 ```
 Sidebar / Bottom Nav:
 - Venta → /sale
-- Ventas → /sales     (NUEVO)
+- Historial → /sales
 - Productos → /products
 - Inventario → /inventory
 - Caja → /cash

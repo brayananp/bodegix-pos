@@ -20,6 +20,7 @@
 | [database-schema-v3.md](./database-schema-v3.md) | Snapshot de caja (Fase 4) |
 | [database-schema-v4.md](./database-schema-v4.md) | Borrador de carrito (Fase 5) |
 | [database-schema-v5.md](./database-schema-v5.md) | **Anulación de ventas (Fase 6) — NUEVO** |
+| [database-schema-v6.md](./database-schema-v6.md) | Índice de total para orden paginado del historial |
 | [database-migrations.md](./database-migrations.md) | Estrategia de migraciones y versionado |
 | [storage-persistence.md](./storage-persistence.md) | StorageManager API y prevención de cuota excedida |
 
@@ -59,6 +60,9 @@
 | [ui/sale-ui.md](./ui/sale-ui.md) | **Interfaz: responsive, checkout, historial, anulación — ACTUALIZADO** |
 | [database/sale-integrity.md](./database/sale-integrity.md) | **Integridad transaccional multi-tabla — ACTUALIZADO** |
 | [database/sale-draft.md](./database/sale-draft.md) | **Persistencia del carrito — ACTUALIZADO** |
+| [ui/sales-history-ui.md](./ui/sales-history-ui.md) | Historial, Sheet, responsive y navegación |
+| [use-cases/void-sale.md](./use-cases/void-sale.md) | Contrato transaccional de anulación |
+| [database/sale-void-integrity.md](./database/sale-void-integrity.md) | Invariantes y diagnóstico de anulación |
 | [PHASE-5-SUMMARY.md](./PHASE-5-SUMMARY.md) | **Resumen ejecutivo de Fase 5** |
 | [PHASE-6-SUMMARY.md](./PHASE-6-SUMMARY.md) | **Resumen ejecutivo de Fase 6 — NUEVO** |
 
@@ -67,6 +71,8 @@
 | Documento | Descripción |
 |-----------|-------------|
 | [payments/manual-payment-verification.md](./payments/manual-payment-verification.md) | Confirmación manual de pagos externos (Yape, Plin, POS, transferencia) |
+| [payments/payment-reversal.md](./payments/payment-reversal.md) | Confirmación y referencia de devolución por pago |
+| [business-rules/sale-void-policy.md](./business-rules/sale-void-policy.md) | Política de anulación completa y sesión original |
 | [adr/0011-payments-inside-sales.md](./adr/0011-payments-inside-sales.md) | ADR: Pagos dentro del módulo sales, no separado |
 
 ## 📐 Decisiones arquitectónicas (ADRs)
@@ -135,8 +141,8 @@ Estos documentos son especificaciones iniciales. La **fuente de verdad** es el c
 | **Fase 3** | ✅ Completado | [modules/inventory.md](./modules/inventory.md), [database-schema-v2.md](./database-schema-v2.md) |
 | **Fase 4** | ✅ Completado | [modules/cash.md](./modules/cash.md), [database-schema-v3.md](./database-schema-v3.md) |
 | **Fase 5** | ✅ Completado | [modules/sales.md](./modules/sales.md), [database-schema-v4.md](./database-schema-v4.md), [PHASE-5-SUMMARY.md](./PHASE-5-SUMMARY.md) |
-| **Fase 6** | ✅ Completado | [modules/sales.md](./modules/sales.md), [database-schema-v5.md](./database-schema-v5.md), [PHASE-6-SUMMARY.md](./PHASE-6-SUMMARY.md) |
-| Fase 7 | 🔜 Próxima | Reportes y resumen diario |
+| **Fase 6** | ✅ Completado | [modules/sales.md](./modules/sales.md), [database-schema-v6.md](./database-schema-v6.md), [PHASE-6-SUMMARY.md](./PHASE-6-SUMMARY.md) |
+| Fase 7 | 🔜 Próxima | Resumen operativo y cierre diario |
 | Fase 8 | 📋 Planeada | Backup y exportación |
 | Fase 9 | 📋 Planeada | Settings avanzado |
 | Fase 10 | 📋 Planeada | PWA completa + service worker |
@@ -151,7 +157,7 @@ Estos documentos son especificaciones iniciales. La **fuente de verdad** es el c
 
 ### Para entender la base de datos
 1. [local-database.md](./local-database.md) — Fundamentos
-2. [database-schema-v4.md](./database-schema-v4.md) — Esquema actual
+2. [database-schema-v6.md](./database-schema-v6.md) — Esquema actual
 3. [database-migrations.md](./database-migrations.md) — Versionado
 
 ### Para implementar ventas

@@ -184,3 +184,9 @@ En el MVP no se automatiza devolución del dinero. La devolución física o exte
 Caja ya agrega pagos persistidos confirmados o verificados manualmente por método y excluye ventas
 o pagos anulados. Usa `amountCents`, nunca `cashReceivedCents`; solo efectivo entra en la fórmula.
 La creación de ventas y pagos queda reservada para la Fase 5.
+
+## Reversión en Fase 6
+
+Cada pago original requiere confirmación manual. Efectivo guarda referencia nula; Yape, Plin,
+tarjeta y transferencia admiten referencia opcional. No hay integración automática ni pagos
+negativos. Al quedar venta/pagos `voided`, el resumen vivo de caja los excluye sin crear retiros.

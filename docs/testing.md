@@ -127,3 +127,10 @@ La Fase 4 agrega pruebas puras de cálculos/reglas, formularios, componentes, se
 integración Dexie, migración v3, diagnóstico y el ciclo E2E apertura → depósito → retiro → cierre →
 detalle. La integración incluye doble apertura, retiros concurrentes, rollback y fixtures directos
 de ventas/pagos sin implementar ventas.
+
+## Cobertura de historial y anulación
+
+Fase 6 agrega reglas de elegibilidad/motivo/confirmaciones, mapeadores de formulario, search params,
+consultas paginadas, snapshots, pagos mixtos, stock, resumen de caja derivado, rollback, doble
+anulación, migraciones v4→v5→v6, diagnóstico profundo y límites arquitectónicos. E2E cubre el flujo
+por `/sales` en escritorio y móvil.

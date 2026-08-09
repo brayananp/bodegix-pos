@@ -127,3 +127,10 @@ Comandos y consultas públicas, transacciones concurrentes, snapshot v3, diagnó
 compuestos, overlays responsive, URL restaurable, indicador global y pruebas unitarias,
 integración/componentes/arquitectura/E2E están implementados. Ventas, pagos, reapertura y respaldo
 permanecen fuera del alcance.
+
+## DoD de Fase 6
+
+Se considera terminada cuando `/sales`, filtros/paginación, detalle histórico, elegibilidad,
+confirmaciones por pago, transacción compensatoria, resultado reconstruible, diagnóstico,
+migraciones, documentación y suites unitarias/integración/componentes/arquitectura/E2E pasan sin
+eliminar ni editar ventas, crear cash movements o permitir anulación parcial/posterior al cierre.

@@ -30,3 +30,9 @@ Según Dexie, un error no capturado aborta la transacción. Capturar un error de
 transacción equivale a manejarlo; si debe abortar, se relanza.
 
 Referencia: [Dexie Version.upgrade()](https://dexie.org/docs/Version/Version.upgrade%28%29).
+
+## Migraciones v5 y v6
+
+V5 transforma pagos existentes para inicializar ambos campos de anulación en `null`. V6 agrega el
+índice `sales.totalCents` sin reescribir datos. Nunca se modifica una versión publicada; ambas se
+registran en orden y se prueban desde bases legacy aisladas.

@@ -440,3 +440,9 @@ Hoy no hay frontera de negocio. No se extrae.
 Los comandos delegan en `CashUnitOfWork`; las consultas paginadas y resúmenes dependen de
 `CashQueries`. No existe repositorio genérico. La infraestructura traduce Dexie y el módulo expone
 una API pública única desde `src/modules/cash/index.ts`.
+
+## Aplicación de ventas en Fase 6
+
+`SaleHistoryQueries` encapsula count, búsqueda, detalle, elegibilidad y resultado. `voidSale` es el
+único comando autorizado y delega en `VoidSaleUnitOfWork`. Dominio/aplicación no importan React ni
+Dexie; rutas no importan infraestructura y componentes no escriben tablas.

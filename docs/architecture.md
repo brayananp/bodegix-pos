@@ -157,3 +157,10 @@ Para despliegue, el servidor debe redirigir todas las rutas al `index.html`:
 `CashUnitOfWork`, lecturas mediante `CashQueries`, adaptadores Dexie y hooks reactivos. Puede leer
 la API persistida de ventas para agregación, pero nunca escribirla. El snapshot separa la consulta
 histórica de los datos vivos.
+
+## Slice de historial y anulación
+
+`sales/application` define `SaleHistoryQueries` y `VoidSaleUnitOfWork`; Dexie implementa consultas
+por índices/lotes y la frontera transaccional. `sales` coordina stock solo dentro de esa unidad de
+trabajo. `cash` continúa como lector de ventas/pagos activos y `inventory` no depende de `sales`.
+La ruta importa únicamente la API pública del módulo.

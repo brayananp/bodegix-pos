@@ -318,3 +318,9 @@ validación Zod por blur/submit, feedback con Sonner y reset tras persistencia e
 `/cash` alterna Caja actual/Historial. Apertura y movimiento son Dialog/Drawer responsive; cierre y
 detalle son Sheet. Search params restauran panel y sesión. El guard compartido protege cambios y la
 diferencia usa texto Cuadrada/Sobrante/Faltante además del color.
+
+## Historial de ventas
+
+`/sales` usa tabla en escritorio y tarjetas en móvil. Un único Sheet cubre detalle, formulario y
+resultado; no anida Dialog/Drawer. El formulario usa composición compartida de TanStack Form,
+confirmaciones descritas, guard de dirty state, acción destructiva explícita y resultado `aria-live`.

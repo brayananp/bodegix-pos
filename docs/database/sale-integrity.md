@@ -30,3 +30,10 @@ verificados, movimientos por venta, correlativo y borrador válido.
 
 Dos pestañas compiten por stock y correlativo; solo una transacción exitosa no deja stock negativo
 ni ventas parciales.
+
+## Integridad compensatoria
+
+La anulación no reemplaza la venta original. Añade `sale_void` positivo por producto y lifecycle
+`voided` a venta/pagos dentro de la misma transacción. No cambia ítems, importes, correlativo,
+movimientos `sale`, cash movements ni snapshots cerrados. El diagnóstico profundo rechaza estados
+parciales. Véase [sale-void-integrity.md](./sale-void-integrity.md).

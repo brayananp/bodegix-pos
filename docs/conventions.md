@@ -136,3 +136,9 @@ importa UI. Los módulos acceden a persistencia futura mediante adaptadores priv
 Importes en céntimos; motivos 3–160 caracteres. Movimientos y cierres no exponen update/delete.
 Los hooks `useCash*` son el único lugar de UI con `useLiveQuery`. `panel` y `sessionId` viven en la
 URL; dinero contado y motivos viven solo en TanStack Form.
+
+## Convenciones de ventas históricas
+
+Usa `completed`/`voided`, `sale`/`sale_void` y `voidOperationReference`. No uses delete, pagos
+negativos ni cash movements para anular. Los filtros se llaman `q`, `status`, `paymentMethod`,
+`range`, `from`, `to`, `cashSessionId`, `page`, `pageSize`, `sort`, `panel` y `saleId`.

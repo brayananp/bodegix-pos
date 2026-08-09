@@ -1,7 +1,7 @@
 # Contexto de Bodegix POS
 
 > Documento vivo de incorporación, relevo y contexto para personas y agentes de desarrollo.
-> Última actualización: 2025-01-XX. Estado cubierto: Fases 1, 2, 3, 4, 5 y 6 completadas.
+> Última actualización: 2026-08-08. Estado cubierto: Fases 1, 2, 3, 4, 5 y 6 completadas.
 
 ## Cómo usar este documento
 
@@ -126,38 +126,34 @@ La transacción `completeSale` coordina:
 
 Cualquier fallo en cualquier paso produce rollback completo. El carrito persiste en
 `saleDrafts/main` (singleton) entre recargas. Los pagos externos se confirman manualmente. No
-existen anulaciones ni historial administrativo de ventas aún (implementándose en Fase 6).
+El historial y la anulación de Fase 6 reutilizan estos snapshots inmutables.
 
 ### Fase 6 — Historial y anulación de ventas: completada
 
 En `/sales` se puede:
 
-- consultar historial paginado de ventas (20 por página);
-- buscar ventas por número, producto o referencia de pago;
-- filtrar por estado (completadas/anuladas) y método de pago;
+- consultar historial paginado de ventas (25, 50 o 100 por página);
+- buscar ventas por número;
+- filtrar por estado, método, rango de fecha y sesión de caja, además de ordenar;
 - visualizar detalle completo de venta en Sheet responsive;
 - consultar productos vendidos con cantidades y precios snapshot;
-- visualizar todos los pagos realizados con métodos y referencias;
+- visualizar pagos, sesión y movimientos `sale`/`sale_void`;
 - anular ventas de la sesión de caja actual abierta;
 - ingresar motivo obligatorio de anulación (5-240 caracteres);
+- confirmar manualmente la devolución exacta de cada pago y guardar referencia externa opcional;
 - restaurar stock automáticamente al inventario;
 - marcar pagos como anulados sin crear pagos negativos;
-- preservar filtros y estado en la URL.
+- preservar filtros, panel y venta en la URL sin serializar el formulario.
 
 La anulación es compensatoria (soft delete): no elimina registros, sino que marca `voidedAt` y
 guarda `voidReason`. Está restringida a ventas de la sesión actual mientras esté abierta. No se
 permiten anulaciones parciales ni anulaciones después de cerrar sesión.
 
-La transacción `voidSale` coordina atómicamente en 4 tablas:
-
-1. Actualiza `sales` con estado `voided`, timestamp y motivo;
-2. Marca todos los `salePayments` como anulados;
-3. Crea `InventoryMovement` tipo `void_sale_return` por cada producto;
-4. Incrementa `Product.stockQuantity` con devolución;
-5. Registra `CashOperation` tipo `withdrawal_void_sale` para pagos en efectivo.
-
-Cualquier fallo produce rollback completo. El esquema v5 agrega `voidedAt` y `voidReason` a
-`sales`, y `voidedAt` con `voidOperationReference` a `salePayments`.
+La transacción `voidSale` coordina atómicamente `sales`, `saleItems`, `salePayments`,
+`cashSessions`, `products` e `inventoryMovements`. Relee y valida dentro de la transacción, agrupa
+líneas por producto, crea `sale_void`, restaura stock y marca venta/pagos. No crea
+`cashMovements`: caja se recalcula excluyendo venta/pagos anulados. Cualquier fallo hace rollback.
+V5 normaliza campos de anulación de pagos y v6 indexa `sales.totalCents`.
 
 ### Estado de los demás módulos
 
@@ -166,7 +162,7 @@ Cualquier fallo produce rollback completo. El esquema v5 agrega `voidedAt` y `vo
 | `catalog` | Implementado en Fase 2. |
 | `settings` | Infraestructura y diagnóstico local de Fase 1. No es configuración completa. |
 | `inventory` | Implementado en Fase 3. |
-| `sales` | Implementado en Fase 5. |
+| `sales` | Venta en Fase 5; historial y anulación en Fase 6. |
 | `cash` | Implementado en Fase 4. |
 | `reporting` | Solo límite del módulo. Sin consultas de negocio reales. |
 | `backup` | Solo límite del módulo. Sin exportación, importación o restauración. |
@@ -267,12 +263,12 @@ compatibilidad, pero no es el recomendado.
 
 - Nombre de la base: `bodegix-pos`.
 - Motor: Dexie 4 sobre IndexedDB.
-- Versión actual: `5`.
-- Las versiones publicadas v1, v2, v3, v4 y v5 son inmutables. La v2 añade índices compuestos de
+- Versión actual: `6`.
+- Las versiones publicadas v1, v2, v3, v4, v5 y v6 son inmutables. La v2 añade índices compuestos de
   inventario. La v3 agrega campos nullable de snapshot a `cashSessions` mediante un upgrade
   explícito que conserva el cuadre previo. La v4 agrega la tabla `saleDrafts` sin upgrade ni
-  datos de ejemplo. La v5 agrega campos de anulación a `sales` y `salePayments` sin transformación
-  de datos. Cada cambio futuro requiere otra versión.
+  datos de ejemplo. La v5 inicializa en `null` los campos de anulación de `salePayments`; la v6
+  agrega el índice `sales.totalCents`. Cada cambio futuro requiere otra versión.
 - La base se crea y abre únicamente en el navegador mediante `getLocalDatabase()`.
 - Importar módulos durante SSR o generación del shell no abre IndexedDB.
 - Los valores ausentes se persisten como `null`, no como `undefined`.
@@ -280,16 +276,16 @@ compatibilidad, pero no es el recomendado.
 - Los timestamps se persisten como epoch milliseconds UTC.
 - Los IDs se generan con `crypto.randomUUID()`.
 
-### Tablas del esquema v5
+### Tablas del esquema v6
 
 | Tabla | Propietario | Uso actual |
 |---|---|---|
 | `categories` | catalog | Funcional. |
 | `products` | catalog | Funcional; contiene el stock materializado. |
 | `inventoryMovements` | inventory | Funcional; ledger append-only de inventario. |
-| `sales` | sales | Funcional; registro de ventas con campos de anulación v5. |
+| `sales` | sales | Funcional; registro histórico e índice de total v6. |
 | `saleItems` | sales | Funcional; snapshots de productos vendidos. |
-| `salePayments` | sales | Funcional; pagos con campos de anulación v5. |
+| `salePayments` | sales | Funcional; pagos con lifecycle de anulación v5. |
 | `saleDrafts` | sales | Funcional; singleton `main` con carrito persistido. |
 | `cashSessions` | cash | Funcional; sesión, cuadre y snapshot histórico. |
 | `cashMovements` | cash | Funcional; depósitos y retiros append-only. |
@@ -396,7 +392,7 @@ Existe una sola infraestructura de TanStack Form en `src/shared/ui/forms`:
 - `ProductFormFields` usa `withForm` para componer los campos del producto;
 - los formularios de apertura, movimiento y cierre de caja usan `formOptions`, `withForm`,
   `AppField` y `AppForm` sobre la misma composición;
-- `withFieldGroup` está disponible, pero no se usa artificialmente sin un grupo reutilizable.
+- `withFieldGroup` compone pagos de checkout y confirmaciones de anulación reutilizables.
 
 Campos registrados:
 
@@ -406,6 +402,7 @@ Campos registrados:
 - `BarcodeField`;
 - `SelectField`;
 - `TextareaField`;
+- `CheckboxField`;
 - `FieldErrorInfo`.
 
 Componentes registrados:
@@ -478,7 +475,8 @@ Comandos públicos:
 
 La transición pura deriva tipo, delta, `stockBefore` y `stockAfter`. Un conteo igual al saldo
 devuelve `NO_STOCK_CHANGE` sin escribir. Pérdidas mapean `damaged`, `expired` u
-`adjustment_out`. Los tipos `sale` y `sale_void` solo están reservados en persistencia.
+`adjustment_out`. Los tipos `sale` y `sale_void` se escriben únicamente en las unidades de trabajo
+de ventas.
 
 Estados:
 
@@ -522,6 +520,9 @@ y la transacción `completeSale`. Expone ocho operaciones de carrito y dos coman
 
 - `completeSale` (transacción atómica);
 - `getSaleResult` (reconstrucción desde snapshots).
+- `searchSales` y `getSaleDetail` (historial y detalle);
+- `voidSale` (compensación atómica completa);
+- `getSaleVoidResult` (resultado reconstruible).
 
 `CompleteSaleUnitOfWork` delimita la transacción multi-tabla y `SaleQueries` ofrece reconstrucción
 de resultado y productos para venta. `DexieCompleteSaleUnitOfWork` escribe atómicamente en 8 tablas:
@@ -545,9 +546,9 @@ Hooks React (`useSaleDraft`, `useSaleDraftReview`, `useCompleteSale`) usan `useL
 gestionan estados de carga, errores y resultados. La interfaz usa panel dividido en desktop
 (catálogo izquierda, carrito derecha) y Sheet móvil con tres modos (`cart`, `checkout`, `result`).
 
-El diagnóstico profundo `sales-integrity` detecta ventas sin ítems/pagos, totales incorrectos,
-vuelto inválido, pagos sin referencia, métodos duplicados, movimientos faltantes, correlativo roto
-y borrador inválido. Solo informa; nunca repara datos.
+El diagnóstico profundo `sales-integrity` distingue ventas completadas y anuladas; detecta lifecycle
+parcial, pagos activos/anulados inconsistentes, restauraciones faltantes/duplicadas, temporalidad,
+totales, correlativo y borrador inválido. Solo informa; nunca repara datos.
 
 `/sale` usa search params `q`, `categoryId`, `panel` y `saleId`. Búsqueda por nombre normalizado,
 código exacto o categoría. Checkout con TanStack Form, array dinámico de pagos, validación de suma
@@ -600,14 +601,14 @@ inconsistentes y una ecuación de efectivo esperado rota. Solo informa; nunca re
 | Unitarias/componentes | Vitest + React Testing Library |
 | E2E | Playwright, Chromium desktop y Pixel 5 emulado |
 | Formato y lint | Biome |
-| Paquetes | pnpm 10 |
+| Paquetes | pnpm 11.20.0 |
 
 El `package.json` contiene `pg` por herencia del scaffolding, pero no existe persistencia
 PostgreSQL ni backend funcional en el MVP actual.
 
 ## Comandos de desarrollo
 
-Requisitos: Node.js 22 o superior y pnpm 10 o superior.
+Requisitos: Node.js 22 o superior y pnpm 11.20.0.
 
 ```bash
 pnpm install
@@ -627,21 +628,12 @@ pnpm check:full       # check + E2E
 Antes de editar código relacionado con TanStack, revisar `AGENTS.md` y ejecutar el comando de
 TanStack Intent que coincida con el cambio.
 
-## Calidad verificada durante el cierre de Fase 6
+## Calidad de Fase 6
 
-Línea base completa ejecutada al cerrar la fase:
-
-- `pnpm format:check`: archivos correctos;
-- `pnpm lint`: archivos sin errores;
-- `pnpm typecheck`: correcto;
-- `pnpm test`: 33 archivos y 265 pruebas aprobadas;
-- `pnpm build`: cliente, SSR y Nitro correctos;
-- `pnpm test:e2e`: tests E2E aprobados incluyendo historial y anulación.
-
-La suite incluye dominio, formularios, consultas, rollback, concurrencia, migraciones
-v1→v2→v3→v4→v5, diagnóstico, componentes, arquitectura, carrito persistido, revisión de cambios,
-transacción multi-tabla, historial de ventas con filtros, anulación compensatoria y recorridos
-Playwright completos de catálogo, inventario, caja y ventas.
+La suite incluye dominio, formulario, search params, consultas, rollback, doble anulación,
+migraciones v1→v2→v3→v4→v5→v6, diagnóstico y arquitectura. Validación del 2026-08-08: formato,
+lint y typecheck correctos; 38 archivos/304 pruebas Vitest; build cliente/SSR/Nitro; 52 E2E
+Playwright aprobados en Chromium de escritorio y Pixel 5 emulado.
 
 ## Convenciones que deben preservarse
 
@@ -653,7 +645,7 @@ Playwright completos de catálogo, inventario, caja y ventas.
 - Unitarias junto al archivo; E2E en `e2e/`; arquitectura en `src/test/architecture/`.
 - Una operación crítica que afecta varias tablas usa una única transacción Dexie.
 - No esperar red, temporizadores o UI dentro de una transacción.
-- No modificar los esquemas v1, v2, v3, v4 o v5; crear una versión nueva si cambia la estructura.
+- No modificar los esquemas v1, v2, v3, v4, v5 o v6; crear una versión nueva si cambia la estructura.
 - No introducir campos especulativos de sincronización.
 - No usar importes de coma flotante ni editar stock silenciosamente.
 - No modificar pagos o ventas confirmadas sin anulación explícita.
@@ -662,7 +654,7 @@ Playwright completos de catálogo, inventario, caja y ventas.
 
 ## Próxima fase autorizada
 
-### Fase 7 — Reportes y resumen diario
+### Fase 7 — Resumen operativo y cierre diario
 
 No está iniciada. Ventas ya registra transacciones completas y permite consultar historial con
 filtros, pero no existe resumen diario automático, reportes por período, productos más vendidos,
@@ -673,7 +665,7 @@ análisis de rentabilidad ni exportación de datos.
 - Visión y supuestos: `docs/00-decisions-and-assumptions.md` y `docs/01-product-vision.md`.
 - Alcance del MVP: `docs/02-mvp-scope.md`.
 - Requisitos y reglas: `docs/04-functional-requirements.md` y `docs/05-business-rules.md`.
-- Dominio y persistencia: `docs/06-domain-model.md`, `docs/database-schema-v5.md`,
+- Dominio y persistencia: `docs/06-domain-model.md`, `docs/database-schema-v6.md`,
   `docs/database/inventory-integrity.md`, `docs/database/cash-integrity.md`,
   `docs/database/sale-integrity.md` y `docs/local-database.md`.
 - Arquitectura: `docs/architecture.md`, `docs/08-application-architecture.md` y `docs/adr/`.
@@ -682,8 +674,9 @@ análisis de rentabilidad ni exportación de datos.
   `docs/ui/inventory-ui.md`.
 - Caja: `docs/modules/cash.md`, `docs/use-cases/cash-use-cases.md`, `docs/ui/cash-ui.md` y
   `docs/database/cash-session-snapshot.md`.
-- Ventas: `docs/modules/sales.md`, `docs/use-cases/sales-use-cases.md`, `docs/ui/sale-ui.md`,
-  `docs/database/sale-integrity.md`, `docs/database/sale-draft.md`, `docs/PHASE-5-SUMMARY.md` y
+- Ventas: `docs/modules/sales.md`, `docs/use-cases/sales-use-cases.md`,
+  `docs/use-cases/void-sale.md`, `docs/ui/sales-history-ui.md`,
+  `docs/database/sale-void-integrity.md`, `docs/business-rules/sale-void-policy.md` y
   `docs/PHASE-6-SUMMARY.md`.
 - Formularios y UX: `docs/forms/form-composition.md`, `docs/ui/catalog-ui.md` y
   `docs/ui/overlay-strategy.md`.

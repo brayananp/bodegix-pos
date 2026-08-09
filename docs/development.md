@@ -36,6 +36,12 @@ cd bodegix-pos
 pnpm install
 ```
 
+## Desarrollo de Fase 6
+
+El estado del historial vive en search params tipados; el estado sensible del formulario vive en
+TanStack Form. Para validar cambios de anulación ejecuta formato, lint, typecheck, Vitest, pruebas
+arquitectónicas, build y Playwright. Las pruebas Dexie siempre usan una base aislada.
+
 ## Variables de entorno
 
 No existen variables de entorno obligatorias en la Fase 0.

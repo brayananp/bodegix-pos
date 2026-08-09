@@ -229,7 +229,7 @@ Todavía **no contiene:**
 - [Esquema v2](docs/database-schema-v2.md)
 - [Esquema v3](docs/database-schema-v3.md)
 - [Esquema v4](docs/database-schema-v4.md)
-- [Esquema v5](docs/database-schema-v5.md)
+- [Esquema v6](docs/database-schema-v6.md)
 - [Migraciones](docs/database-migrations.md)
 - [Persistencia de almacenamiento](docs/storage-persistence.md)
 - [Módulo de inventario](docs/modules/inventory.md)
@@ -246,3 +246,9 @@ Todavía **no contiene:**
 - [Integridad de ventas](docs/database/sale-integrity.md)
 - [Borrador del carrito](docs/database/sale-draft.md)
 - [ADRs](docs/adr/)
+
+## Fase 6 — historial y anulación
+
+`/sales` ofrece historial paginado, filtros restaurables, detalle histórico y anulación completa
+solo en la sesión original abierta. La compensación es atómica: conserva la venta, anula pagos,
+restaura stock con `sale_void` y no crea movimientos de caja. Esquema actual: v6.

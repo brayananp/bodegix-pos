@@ -116,3 +116,9 @@
 
 Se implementaron apertura única, fondo inicial, depósitos, retiros limitados por efectivo esperado,
 arqueo, cierre con diferencia, historial paginado, detalle persistente y estado global reactivo.
+
+## Fase 6
+
+FR-SALES-06 exige `/sales`, búsqueda por número, filtros por estado/método/fecha/sesión, paginación
+25/50/100, detalle con snapshots y anulación completa reconstruible. El resultado debe sobrevivir
+recarga y la operación no puede editar ni eliminar históricos.

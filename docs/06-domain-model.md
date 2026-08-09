@@ -296,3 +296,9 @@ Regla: en el MVP NO introducir `ProductPersistenceModel`, `ProductDTO`, `Product
 `CashSession` conserva el cuadre y el registro persistido agrega el desglose final por ventas,
 método de pago y movimientos manuales. `CashSessionSummary` es una proyección: viva para sesiones
 abiertas y congelada para cerradas.
+
+## Ciclo de vida de venta
+
+`Sale` pasa de `completed` a `voided` una sola vez. `SalePayment` conserva cobro y agrega
+`voidedAt`/`voidOperationReference`. `SaleVoidEligibility` expresa causas estables y
+`VoidSaleResult` permite reconstruir la compensación. No existe entidad de devolución parcial.

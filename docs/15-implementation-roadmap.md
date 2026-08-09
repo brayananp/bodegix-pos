@@ -248,3 +248,9 @@ Tareas:
 4. `pnpm e2e:smoke` mínimo 5 specs estables
 5. Revisión manual de 2 flujos representativos en Playwright inspector
 6. Ningún TODO/FIXME sin ticket asociado en código de entrega
+
+## Estado actualizado
+
+Fase 6 implementa historial y anulación completa con persistencia v6. La siguiente fase es
+**Fase 7 — Resumen operativo y cierre diario**; devoluciones posteriores al cierre continúan fuera
+del MVP.

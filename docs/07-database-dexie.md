@@ -232,3 +232,9 @@ Coinciden a menudo, pero no son lo mismo. El dominio define las invariantes (`pa
 El esquema v3 agrega campos no indexados de snapshot a `cashSessions` mediante upgrade explícito.
 Los índices de sesiones, movimientos, ventas y pagos permanecen intactos. Cierre y retiro incluyen
 en su transacción todas las tablas necesarias para recalcular el efectivo definitivo.
+
+## Esquema vigente
+
+V5 normaliza los campos anulables de `salePayments`; v6 indexa `sales.totalCents`. La anulación abre
+una sola transacción sobre ventas, ítems, pagos, sesiones, productos y ledger. Las consultas usan
+índices y cargas en lote; no hacen una consulta de ítems o pagos por cada fila.
