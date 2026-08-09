@@ -80,6 +80,18 @@ test.describe("Bodegix POS — Sidebar desktop", () => {
 		await expect(activeLink).toHaveAttribute("aria-current", "page");
 	});
 
+	test("/sales activa solo Historial y no Venta", async ({ page }) => {
+		await page.goto("/sales");
+		const sidebar = page.getByRole("complementary", { name: "Navegación principal" });
+		await expect(sidebar.getByRole("link", { name: "Historial" })).toHaveAttribute(
+			"aria-current",
+			"page",
+		);
+		await expect(sidebar.getByRole("link", { name: "Venta", exact: true })).not.toHaveAttribute(
+			"aria-current",
+		);
+	});
+
 	test("navegar via clic en el sidebar", async ({ page }) => {
 		await page.goto("/sale");
 		await page

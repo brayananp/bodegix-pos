@@ -22,6 +22,14 @@ export interface NavItem {
 }
 
 /**
+ * Evita colisiones entre rutas hermanas con el mismo prefijo, como
+ * `/sale` y `/sales`, sin perder el estado activo de rutas hijas reales.
+ */
+export function isNavItemActive(currentPath: string, itemPath: string) {
+	return currentPath === itemPath || (itemPath !== "/" && currentPath.startsWith(`${itemPath}/`));
+}
+
+/**
  * Navegación principal ordenada por frecuencia de uso diario.
  */
 export const PRIMARY_NAV: readonly NavItem[] = [
@@ -33,7 +41,7 @@ export const PRIMARY_NAV: readonly NavItem[] = [
 	},
 	{
 		to: "/sales",
-		label: "Ventas",
+		label: "Historial",
 		description: "Historial de ventas",
 		icon: ShoppingBag03Icon,
 	},

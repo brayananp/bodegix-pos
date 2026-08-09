@@ -7,4 +7,5 @@ export * from "./use-sale-products";
 export * from "./use-sale-products-for-cart";
 export * from "./use-sale-result";
 export * from "./use-sale-void-eligibility";
-export * from "./use-void-sale-action";
+export * from "./use-sale-void-result";
+export * from "./use-sales-count";

@@ -14,7 +14,7 @@ import {
 import { useOnlineStatus } from "@/shared/kernel/network/use-online-status";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { PRIMARY_NAV, SECONDARY_NAV } from "./nav-config";
+import { isNavItemActive, PRIMARY_NAV, SECONDARY_NAV } from "./nav-config";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const routerState = useRouterState();
@@ -22,7 +22,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const isOnline = useOnlineStatus();
 
 	function isActive(to: string) {
-		return currentPath === to || (to !== "/" && currentPath.startsWith(to));
+		return isNavItemActive(currentPath, to);
 	}
 
 	return (

@@ -5,6 +5,7 @@ import { FormError } from "./components/form-error";
 import { SubmitButton } from "./components/submit-button";
 import { UnsavedChangesGuard } from "./components/unsaved-changes-guard";
 import { BarcodeField } from "./fields/barcode-field";
+import { CheckboxField } from "./fields/checkbox-field";
 import { FieldErrorInfo } from "./fields/field-error-info";
 import { IntegerField } from "./fields/integer-field";
 import { MoneyField } from "./fields/money-field";
@@ -22,6 +23,7 @@ export const { useAppForm, withForm, withFieldGroup } = createFormHook({
 		MoneyField,
 		IntegerField,
 		BarcodeField,
+		CheckboxField,
 		SelectField,
 		FieldErrorInfo,
 	},

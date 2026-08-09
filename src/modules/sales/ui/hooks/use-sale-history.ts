@@ -22,6 +22,7 @@ export function useSaleHistory(filters: SaleSearchFilters, pagination: Paginatio
 			filters.cashSessionId,
 			filters.fromDate,
 			filters.toDate,
+			filters.sort,
 			pagination.page,
 			pagination.pageSize,
 		],

@@ -1,202 +1,123 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
-test.describe("Historial de Ventas", () => {
-	test.beforeEach(async ({ page }) => {
-		await page.goto("/");
-		// Esperar a que la base de datos esté lista
-		await page.waitForSelector('[data-testid="app-ready"], text="Venta"', { timeout: 10000 });
+test.setTimeout(60_000);
+
+function captureBrowserErrors(page: Page): string[] {
+	const errors: string[] = [];
+	page.on("pageerror", (error) => errors.push(error.message));
+	page.on("console", (message) => {
+		if (message.type() === "error") errors.push(message.text());
 	});
+	return errors;
+}
 
-	test("debe mostrar la página de historial de ventas", async ({ page }) => {
-		// Navegar a historial de ventas
-		await page.click('a[href="/sales"]');
-		await page.waitForURL("/sales");
+async function createProductWithStock(page: Page) {
+	await page.goto("/products");
+	await page.getByRole("button", { name: "Nuevo producto" }).click();
+	await page.getByLabel("Nombre", { exact: true }).fill("Producto para anular");
+	await page.getByLabel("Código de barras").fill("880006");
+	await page.getByLabel("Precio de venta").fill("3.50");
+	await page.getByLabel("Stock mínimo").fill("0");
+	await page.getByRole("button", { name: "Crear producto" }).click();
 
-		// Verificar elementos principales
-		await expect(page.getByRole("heading", { name: "Historial de Ventas" })).toBeVisible();
-		await expect(page.getByText("Consulta y gestiona las ventas registradas")).toBeVisible();
+	await page.goto("/inventory");
+	await page.locator("button:visible", { hasText: "Producto para anular" }).first().click();
+	await page.getByRole("button", { name: "Registrar stock inicial" }).click();
+	await page.getByLabel("Cantidad inicial").fill("10");
+	await page.getByRole("button", { name: "Registrar stock inicial" }).last().click();
+	await expect(page.getByText("Stock actual").locator("..")).toContainText("10");
+}
 
-		// Verificar filtros
-		await expect(
-			page.getByPlaceholder("Buscar por número, producto o referencia..."),
-		).toBeVisible();
-		await expect(page.getByRole("button", { name: "Buscar" })).toBeVisible();
-	});
+async function openCash(page: Page) {
+	await page.goto("/cash");
+	await page.getByRole("button", { name: "Abrir caja", exact: true }).click();
+	await page.getByLabel("Efectivo inicial").fill("100");
+	await page
+		.getByRole("dialog", { name: "Abrir caja" })
+		.getByRole("button", { name: "Abrir caja", exact: true })
+		.click();
+	await expect(page.getByRole("heading", { name: "Caja operativa" })).toBeVisible();
+}
 
-	test("debe filtrar ventas por estado", async ({ page }) => {
-		await page.goto("/sales");
+async function completeCashSale(page: Page, mobile: boolean) {
+	await createProductWithStock(page);
+	await openCash(page);
+	await page.goto("/sale");
+	await page.getByLabel("Buscar producto").fill("Producto para anular");
+	await page.getByRole("button", { name: /Agregar Producto para anular/i }).click();
+	if (mobile) await page.getByRole("button", { name: "Ver carrito" }).click();
+	await page.getByRole("button", { name: "Cobrar" }).click();
+	await page.getByLabel("Efectivo que entrega el cliente").fill("5.00");
+	await page.getByRole("button", { name: "Confirmar venta" }).click();
+	await expect(page.getByText("V-000001", { exact: true })).toBeVisible();
+}
 
-		// Abrir selector de estado
-		const statusSelect = page.locator('[aria-label="Estado"]').or(page.getByText("Todos").first());
-		await statusSelect.click();
+async function openFirstSale(page: Page, mobile: boolean) {
+	await page.goto("/sales");
+	await expect(page.getByRole("heading", { name: "Historial de ventas" })).toBeVisible();
+	if (mobile) await page.getByRole("button", { name: /V-000001/ }).click();
+	else await page.getByRole("button", { name: "Ver detalle" }).click();
+	await expect(page.getByRole("heading", { name: "Detalle de venta" })).toBeVisible();
+}
 
-		// Seleccionar "Completadas"
-		await page.getByRole("option", { name: "Completadas" }).click();
+test("historial vacío, filtros tipados y estados distintos", async ({ page }) => {
+	await page.goto("/sales");
+	await expect(page.getByText("Todavía no hay ventas registradas.")).toBeVisible();
+	await page.getByLabel("Estado").click();
+	await page.getByRole("option", { name: "Anuladas" }).click();
+	await expect(page).toHaveURL(/status=voided/);
+	await page.getByRole("textbox", { name: "Buscar venta" }).fill("999");
+	await page.getByRole("button", { name: "Buscar venta" }).click();
+	await expect.poll(() => new URL(page.url()).searchParams.get("q")).toBe('"999"');
+	await expect(page.getByText("Todavía no hay ventas registradas.")).toBeVisible();
+});
 
-		// Verificar que la URL se actualiza
-		await page.waitForURL(/\/sales\?.*status=completed/);
-	});
+test("consulta snapshots y anula en efectivo sin overlays anidados", async ({ page }, testInfo) => {
+	const browserErrors = captureBrowserErrors(page);
+	const mobile = testInfo.project.name === "mobile-chrome";
+	await completeCashSale(page, mobile);
+	await openFirstSale(page, mobile);
+	await expect(page.getByText("Producto para anular", { exact: true }).first()).toBeVisible();
+	await expect(page.getByText("Salida por venta")).toBeVisible();
+	await page.reload();
+	await expect(page.getByRole("heading", { name: "Detalle de venta" })).toBeVisible();
 
-	test("debe filtrar ventas por método de pago", async ({ page }) => {
-		await page.goto("/sales");
+	await page.getByRole("button", { name: "Preparar anulación completa" }).click();
+	await expect(page.getByRole("heading", { name: "Anular venta" })).toBeVisible();
+	await expect(page.locator('[data-slot="sheet-content"]')).toHaveCount(1);
+	await page.getByLabel("Motivo de anulación").click();
+	await page.getByRole("option", { name: "Cliente canceló" }).click();
+	await page.getByRole("checkbox", { name: /Confirmo que devolví/ }).click();
+	await page.getByRole("button", { name: "Anular venta y restaurar stock" }).click();
 
-		// Abrir selector de método
-		const methodSelect = page
-			.locator('[aria-label="Método de pago"]')
-			.or(page.getByText("Todos los métodos").first());
-		await methodSelect.click();
+	await expect(page.getByRole("heading", { name: "Venta anulada" })).toBeVisible();
+	await expect(page.getByText("V-000001 fue anulada")).toBeVisible();
+	await page.reload();
+	await expect(page.getByText("V-000001 fue anulada")).toBeVisible();
+	await page.getByRole("button", { name: "Volver al historial" }).click();
+	await expect(
+		page.locator('[data-slot="badge"]:visible').filter({ hasText: "Anulada" }),
+	).toBeVisible();
 
-		// Seleccionar "Efectivo"
-		await page.getByRole("option", { name: "Efectivo" }).click();
+	await page.goto("/inventory");
+	await page.locator("button:visible", { hasText: "Producto para anular" }).first().click();
+	await expect(page.getByText("Stock actual").locator("..")).toContainText("10");
+	await page.goto("/cash");
+	await expect(
+		page.getByText("Efectivo esperado", { exact: true }).first().locator(".."),
+	).toContainText(/100\.00/);
+	expect(browserErrors).toEqual([]);
+});
 
-		// Verificar que la URL se actualiza
-		await page.waitForURL(/\/sales\?.*method=cash/);
-	});
-
-	test("debe buscar ventas por texto", async ({ page }) => {
-		await page.goto("/sales");
-
-		// Ingresar texto de búsqueda
-		const searchInput = page.getByPlaceholder("Buscar por número, producto o referencia...");
-		await searchInput.fill("test");
-
-		// Hacer clic en buscar
-		await page.getByRole("button", { name: "Buscar" }).click();
-
-		// Verificar que la URL se actualiza
-		await page.waitForURL(/\/sales\?.*search=test/);
-	});
-
-	test("debe buscar ventas con Enter", async ({ page }) => {
-		await page.goto("/sales");
-
-		// Ingresar texto y presionar Enter
-		const searchInput = page.getByPlaceholder("Buscar por número, producto o referencia...");
-		await searchInput.fill("venta");
-		await searchInput.press("Enter");
-
-		// Verificar que la URL se actualiza
-		await page.waitForURL(/\/sales\?.*search=venta/);
-	});
-
-	test("debe mostrar estado vacío cuando no hay ventas", async ({ page }) => {
-		await page.goto("/sales?search=nonexistent12345");
-
-		// Verificar mensaje de estado vacío
-		await expect(page.getByText("No hay ventas")).toBeVisible();
-		await expect(
-			page.getByText("No se encontraron ventas con los filtros seleccionados"),
-		).toBeVisible();
-	});
-
-	test("debe navegar entre páginas", async ({ page }) => {
-		await page.goto("/sales");
-
-		// Esperar a que carguen las ventas
-		await page.waitForTimeout(500);
-
-		// Verificar botones de paginación (si hay múltiples páginas)
-		const nextButton = page.getByRole("button", { name: "Siguiente" });
-		const prevButton = page.getByRole("button", { name: "Anterior" });
-
-		// El botón anterior debe estar deshabilitado en página 1
-		await expect(prevButton).toBeDisabled();
-
-		// Si hay más páginas, probar navegación
-		if (await nextButton.isEnabled()) {
-			await nextButton.click();
-			await page.waitForURL(/\/sales\?.*page=2/);
-			await expect(prevButton).toBeEnabled();
-		}
-	});
-
-	test("debe abrir el detalle de una venta al hacer clic", async ({ page }) => {
-		// Crear una venta primero
-		await page.goto("/sale");
-		await page.waitForTimeout(500);
-
-		// Verificar que hay productos o agregar uno si es necesario
-		const productCard = page.locator('[role="button"]').first();
-		if (await productCard.isVisible()) {
-			await productCard.click();
-		}
-
-		// Si hay carrito, proceder al checkout (esto depende del flujo real)
-		// Este test asume que ya hay ventas registradas
-
-		// Ir al historial
-		await page.goto("/sales");
-		await page.waitForTimeout(500);
-
-		// Hacer clic en la primera venta
-		const firstSale = page.locator('[role="button"]').first();
-		if (await firstSale.isVisible()) {
-			await firstSale.click();
-
-			// Verificar que se abre el Sheet de detalle
-			await expect(page.getByText("Detalle de venta")).toBeVisible();
-			await expect(page.getByRole("button", { name: "Cerrar" })).toBeVisible();
-		}
-	});
-
-	test("debe cerrar el detalle al hacer clic en Cerrar", async ({ page }) => {
-		await page.goto("/sales");
-		await page.waitForTimeout(500);
-
-		// Abrir detalle
-		const firstSale = page.locator('[role="button"]').first();
-		if (await firstSale.isVisible()) {
-			await firstSale.click();
-			await expect(page.getByText("Detalle de venta")).toBeVisible();
-
-			// Cerrar
-			await page.getByRole("button", { name: "Cerrar" }).click();
-
-			// Verificar que se cerró
-			await expect(page.getByText("Detalle de venta")).not.toBeVisible();
-		}
-	});
-
-	test("debe ser accesible por teclado", async ({ page }) => {
-		await page.goto("/sales");
-		await page.waitForTimeout(500);
-
-		// Navegar con Tab hasta la primera venta
-		await page.keyboard.press("Tab");
-		await page.keyboard.press("Tab");
-
-		// Si hay una venta, debe poder abrirse con Enter
-		const firstSale = page.locator('[role="button"]:focus').first();
-		if (await firstSale.isVisible()) {
-			await page.keyboard.press("Enter");
-			await expect(page.getByText("Detalle de venta")).toBeVisible();
-
-			// Cerrar con Escape
-			await page.keyboard.press("Escape");
-			await expect(page.getByText("Detalle de venta")).not.toBeVisible();
-		}
-	});
-
-	test("debe mantener filtros al navegar de regreso", async ({ page }) => {
-		await page.goto("/sales?status=completed&method=cash&search=test&page=1");
-
-		// Verificar que los filtros se mantienen
-		const statusSelect = page.locator('button:has-text("Completadas")');
-		await expect(statusSelect).toBeVisible();
-
-		const methodSelect = page.locator('button:has-text("Efectivo")');
-		await expect(methodSelect).toBeVisible();
-
-		const searchInput = page.getByPlaceholder("Buscar por número, producto o referencia...");
-		await expect(searchInput).toHaveValue("test");
-	});
-
-	test("debe mostrar badge con total de ventas", async ({ page }) => {
-		await page.goto("/sales");
-		await page.waitForTimeout(500);
-
-		// Verificar que hay un badge con el conteo
-		const badge = page.locator('[class*="badge"]').filter({ hasText: /ventas?$/ });
-		await expect(badge).toBeVisible();
-	});
+test("una caja cerrada no expone ninguna acción de anulación", async ({ page }, testInfo) => {
+	const mobile = testInfo.project.name === "mobile-chrome";
+	await completeCashSale(page, mobile);
+	await page.goto("/cash");
+	await page.getByRole("button", { name: "Cerrar caja" }).click();
+	await page.getByLabel("Efectivo contado").fill("103.50");
+	await page.getByRole("button", { name: "Confirmar cierre" }).click();
+	await expect(page.locator('[data-slot="sheet-content"]')).toHaveCount(0);
+	await openFirstSale(page, mobile);
+	await expect(page.getByText("Anulación no disponible")).toBeVisible();
+	await expect(page.getByRole("button", { name: "Preparar anulación completa" })).toHaveCount(0);
 });

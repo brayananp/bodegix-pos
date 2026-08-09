@@ -1,7 +1,7 @@
 import { cn } from "@/shared/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { PRIMARY_NAV, SECONDARY_NAV } from "./nav-config";
+import { isNavItemActive, PRIMARY_NAV, SECONDARY_NAV } from "./nav-config";
 
 const ALL_MOBILE_NAV = [...PRIMARY_NAV, ...SECONDARY_NAV] as const;
 
@@ -15,7 +15,7 @@ export function BottomNav() {
 	const currentPath = routerState.location.pathname;
 
 	function isActive(to: string) {
-		return currentPath === to || (to !== "/" && currentPath.startsWith(to));
+		return isNavItemActive(currentPath, to);
 	}
 
 	return (

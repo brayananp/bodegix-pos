@@ -30,11 +30,24 @@ describe("AppSidebar", () => {
 			</SidebarWrapper>,
 		);
 		expect(screen.getByText("Venta")).toBeInTheDocument();
+		expect(screen.getByText("Historial")).toBeInTheDocument();
 		expect(screen.getByText("Productos")).toBeInTheDocument();
 		expect(screen.getByText("Inventario")).toBeInTheDocument();
 		expect(screen.getByText("Caja")).toBeInTheDocument();
 		expect(screen.getByText("Resumen")).toBeInTheDocument();
 		expect(screen.getByText("Configuración")).toBeInTheDocument();
+	});
+
+	it("distingue /sale de /sales al marcar el enlace activo", async () => {
+		await renderWithRouter(
+			<SidebarWrapper>
+				<AppSidebar />
+			</SidebarWrapper>,
+			{ initialPath: "/sales" },
+		);
+
+		expect(screen.getByRole("link", { name: "Historial" })).toHaveAttribute("aria-current", "page");
+		expect(screen.getByRole("link", { name: "Venta" })).not.toHaveAttribute("aria-current");
 	});
 
 	it("renderiza el nombre Bodegix", async () => {
@@ -66,6 +79,7 @@ describe("BottomNav", () => {
 	it("muestra todos los ítems de navegación en móvil", async () => {
 		await renderWithRouter(<BottomNav />);
 		expect(screen.getByText("Venta")).toBeInTheDocument();
+		expect(screen.getByText("Historial")).toBeInTheDocument();
 		expect(screen.getByText("Productos")).toBeInTheDocument();
 		expect(screen.getByText("Inventario")).toBeInTheDocument();
 		expect(screen.getByText("Caja")).toBeInTheDocument();

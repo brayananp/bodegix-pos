@@ -1,5 +1,7 @@
+import { useCallback, useEffect, useId, useState } from "react";
 import { AppShell } from "@/app/layout/app-shell";
 import { PageHeader } from "@/app/layout/page-header";
+import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -11,287 +13,458 @@ import {
 	SelectValue,
 } from "@/shared/components/ui/select";
 import { Skeleton } from "@/shared/components/ui/skeleton";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/shared/components/ui/table";
 import { formatMoney } from "@/shared/kernel/money";
 import { Search01Icon, ShoppingBag03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useNavigate, useSearch } from "@tanstack/react-router";
-import { useState } from "react";
-import type { SaleHistorySummary } from "../../application";
-import { SaleDetailSheet } from "../components";
-import { useSaleHistory } from "../hooks";
+import { getRouteApi, useNavigate, useRouter } from "@tanstack/react-router";
+import type { SaleHistorySummary, SaleSearchFilters } from "../../application";
+import { SaleHistorySheet } from "../components/sale-history-sheet";
+import { useSaleHistory, useSalesCount } from "../hooks";
+import { resolveSalesDateRange, type SalesHistorySearch } from "../sales-history-search";
+import { formatSalesDate, PAYMENT_METHOD_LABELS } from "../sales-format";
 
-const PAGE_SIZE = 20;
+const routeApi = getRouteApi("/sales");
 
-/**
- * Formatea timestamp a fecha corta legible.
- */
-function formatShortDate(timestamp: number): string {
-	return new Intl.DateTimeFormat("es-PE", {
-		dateStyle: "short",
-		timeStyle: "short",
-	}).format(timestamp);
-}
-
-const SALE_STATUS = {
-	all: "Todas",
-	completed: "Completadas",
-	voided: "Anuladas",
-};
-
-const METHOD_PAYMENTS = {
-	all: "Todos los métodos",
-	cash: "Efectivo",
-	yape: "Yape",
-	plin: "Plin",
-	card: "Tarjeta",
-	bank_transfer: "Transferencia",
-};
-/**
- * Página de historial de ventas.
- *
- * Muestra listado de ventas con filtros, búsqueda y paginación.
- * Permite ver detalle y anular ventas desde un Sheet.
- */
 export function SalesHistoryPage() {
-	const navigate = useNavigate();
-	const searchParams = useSearch({ from: "/sales" });
-	const [searchInput, setSearchInput] = useState(searchParams.search ?? "");
-	const [selectedSaleId, setSelectedSaleId] = useState<string | null>(null);
-
-	const page = searchParams.page ?? 1;
-	const status = searchParams.status;
-	const method = searchParams.method;
-
-	const filters: import("../../application").SaleSearchFilters = {
-		...(searchParams.search && { searchText: searchParams.search }),
-		...(status && { status }),
-		...(method && { paymentMethod: method }),
+	const search = routeApi.useSearch();
+	const navigate = useNavigate({ from: "/sales" });
+	const router = useRouter();
+	const [queryDraft, setQueryDraft] = useState(search.q);
+	const dateRange = resolveSalesDateRange(search);
+	const allSalesCount = useSalesCount();
+	const filters: SaleSearchFilters = {
+		sort: search.sort,
+		...(search.q && { searchText: search.q }),
+		...(search.status !== "all" && { status: search.status }),
+		...(search.paymentMethod !== "all" && { paymentMethod: search.paymentMethod }),
+		...(search.cashSessionId?.trim() && { cashSessionId: search.cashSessionId.trim() }),
+		...(dateRange.error
+			? { fromDate: Number.MAX_SAFE_INTEGER, toDate: Number.MIN_SAFE_INTEGER }
+			: {
+					...(dateRange.fromDate !== undefined && { fromDate: dateRange.fromDate }),
+					...(dateRange.toDate !== undefined && { toDate: dateRange.toDate }),
+				}),
 	};
+	const result = useSaleHistory(filters, { page: search.page, pageSize: search.pageSize });
+	const updateSearch = useCallback(
+		(patch: Partial<SalesHistorySearch>, replace = false) =>
+			navigate({ search: (previous) => ({ ...previous, ...patch }), replace, resetScroll: false }),
+		[navigate],
+	);
 
-	const result = useSaleHistory(filters, { page, pageSize: PAGE_SIZE });
+	useEffect(() => setQueryDraft(search.q), [search.q]);
+	useEffect(() => {
+		if (result && result.page !== search.page) updateSearch({ page: result.page }, true);
+	}, [result, search.page, updateSearch]);
 
-	const handleSearch = () => {
-		navigate({
-			to: "/sales",
-			search: {
-				...searchParams,
-				search: searchInput.trim() || undefined,
-				page: 1,
-			},
-		});
-	};
-
-	const handleFilterChange = (key: string, value: string | undefined) => {
-		navigate({
-			to: "/sales",
-			search: {
-				...searchParams,
-				[key]: value || undefined,
-				page: 1,
-			},
-		});
-	};
-
-	const handlePageChange = (newPage: number) => {
-		navigate({
-			to: "/sales",
-			search: { ...searchParams, page: newPage },
-		});
-	};
+	const changeFilter = (patch: Partial<SalesHistorySearch>) => updateSearch({ ...patch, page: 1 });
+	const closePanel = () => updateSearch({ panel: null, saleId: null }, true);
 
 	return (
-		<AppShell pageTitle="Ventas">
+		<AppShell pageTitle="Historial">
 			<PageHeader
-				title="Historial de Ventas"
-				description="Consulta y gestiona las ventas registradas"
-				badge={
-					result ? (
-						<Badge variant="secondary">{result.totalCount} ventas</Badge>
-					) : (
-						<Badge variant="outline">Cargando...</Badge>
-					)
-				}
+				title="Historial de ventas"
+				description="Consulta las ventas registradas y sus anulaciones."
+				badge={<Badge variant="secondary">{result?.totalCount ?? 0} encontradas</Badge>}
 			/>
-
-			<main className="grid gap-4 px-4 pb-8 md:px-6">
-				{/* Filtros */}
-				<div className="flex flex-wrap gap-3">
-					<div className="flex flex-1 gap-2">
-						<Input
-							placeholder="Buscar por número, producto o referencia..."
-							value={searchInput}
-							onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchInput(e.target.value)}
-							onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-								if (e.key === "Enter") handleSearch();
-							}}
-							className="flex-1"
-						/>
-						<Button onClick={handleSearch} variant="secondary">
-							<HugeiconsIcon icon={Search01Icon} className="size-4" />
-							Buscar
-						</Button>
-					</div>
-
-					<Select
-						items={SALE_STATUS}
-						value={status ?? "all"}
-						onValueChange={(v: string | null) =>
-							handleFilterChange("status", v === "all" || v === null ? undefined : v)
-						}
-					>
-						<SelectTrigger className="w-40">
-							<SelectValue placeholder="Estado" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">Todos</SelectItem>
-							<SelectItem value="completed">Completadas</SelectItem>
-							<SelectItem value="voided">Anuladas</SelectItem>
-						</SelectContent>
-					</Select>
-
-					<Select
-						items={METHOD_PAYMENTS}
-						value={method ?? "all"}
-						onValueChange={(v: string | null) =>
-							handleFilterChange("method", v === "all" || v === null ? undefined : v)
-						}
-					>
-						<SelectTrigger className="w-45">
-							<SelectValue placeholder="Método de pago" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">Todos los métodos</SelectItem>
-							<SelectItem value="cash">Efectivo</SelectItem>
-							<SelectItem value="yape">Yape</SelectItem>
-							<SelectItem value="plin">Plin</SelectItem>
-							<SelectItem value="card">Tarjeta</SelectItem>
-							<SelectItem value="bank_transfer">Transferencia</SelectItem>
-						</SelectContent>
-					</Select>
-				</div>
-
-				{/* Lista de ventas */}
-				{!result ? (
+			<main className="space-y-4 px-4 pb-8 md:px-6">
+				<SalesFilters
+					search={search}
+					queryDraft={queryDraft}
+					onQueryDraft={setQueryDraft}
+					onSearch={() => changeFilter({ q: queryDraft.trim() })}
+					onFilter={changeFilter}
+					onClear={() => {
+						setQueryDraft("");
+						updateSearch({
+							q: "",
+							status: "all",
+							paymentMethod: "all",
+							range: "today",
+							from: null,
+							to: null,
+							cashSessionId: null,
+							page: 1,
+							pageSize: 25,
+							sort: "newest",
+						});
+					}}
+				/>
+				{dateRange.error && (
+					<Alert variant="destructive">
+						<AlertTitle>Rango inválido</AlertTitle>
+						<AlertDescription>{dateRange.error}</AlertDescription>
+					</Alert>
+				)}
+				{result === undefined ? (
 					<SalesListSkeleton />
 				) : result.items.length === 0 ? (
-					<EmptyState />
+					<EmptyState hasAnySale={(allSalesCount ?? 0) > 0} />
 				) : (
-					<div className="space-y-2">
-						{result.items.map((sale) => (
-							<SaleCard key={sale.id} sale={sale} onClick={() => setSelectedSaleId(sale.id)} />
-						))}
-					</div>
+					<SalesList
+						sales={result.items}
+						onView={(saleId) => updateSearch({ panel: "detail", saleId })}
+					/>
 				)}
-
-				{/* Paginación */}
-				{result && result.totalPages > 1 && (
-					<div className="flex items-center justify-between rounded-lg border bg-card p-4">
-						<p className="text-sm text-muted-foreground">
-							Página {result.page} de {result.totalPages} · {result.totalCount} ventas
-						</p>
-						<div className="flex gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={!result.hasPreviousPage}
-								onClick={() => handlePageChange(page - 1)}
-							>
-								Anterior
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={!result.hasNextPage}
-								onClick={() => handlePageChange(page + 1)}
-							>
-								Siguiente
-							</Button>
-						</div>
-					</div>
+				{result && result.totalCount > 0 && (
+					<Pagination result={result} onPage={(page) => updateSearch({ page })} />
 				)}
 			</main>
-
-			{/* Sheet de detalle */}
-			{selectedSaleId && (
-				<SaleDetailSheet saleId={selectedSaleId} onClose={() => setSelectedSaleId(null)} />
+			{search.panel && search.saleId && (
+				<SaleHistorySheet
+					saleId={search.saleId}
+					mode={search.panel}
+					onClose={closePanel}
+					onBack={() => router.history.back()}
+					onStartVoid={() => updateSearch({ panel: "void" })}
+					onVoided={() => updateSearch({ panel: "void-result" }, true)}
+				/>
 			)}
 		</AppShell>
 	);
 }
 
-interface SaleCardProps {
-	sale: SaleHistorySummary;
-	onClick: () => void;
+function SalesFilters({
+	search,
+	queryDraft,
+	onQueryDraft,
+	onSearch,
+	onFilter,
+	onClear,
+}: {
+	search: SalesHistorySearch;
+	queryDraft: string;
+	onQueryDraft(value: string): void;
+	onSearch(): void;
+	onFilter(patch: Partial<SalesHistorySearch>): void;
+	onClear(): void;
+}) {
+	return (
+		<section className="relative overflow-hidden rounded-2xl border bg-card p-4 shadow-xs">
+			<div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 opacity-20 [background-image:linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] [background-size:18px_18px]" />
+			<div className="relative grid gap-3 lg:grid-cols-[minmax(240px,1.5fr)_repeat(3,minmax(150px,.7fr))]">
+				<form
+					className="flex gap-2"
+					onSubmit={(event) => {
+						event.preventDefault();
+						onSearch();
+					}}
+				>
+					<label className="sr-only" htmlFor="sales-search">
+						Buscar venta
+					</label>
+					<Input
+						id="sales-search"
+						value={queryDraft}
+						onChange={(event) => onQueryDraft(event.target.value)}
+						placeholder="Buscar V-000123 o 123"
+					/>
+					<Button type="submit" variant="secondary" aria-label="Buscar venta">
+						<HugeiconsIcon icon={Search01Icon} />
+					</Button>
+				</form>
+				<FilterSelect
+					label="Rango de fecha"
+					value={search.range}
+					onChange={(range) => onFilter({ range: range as SalesHistorySearch["range"] })}
+					items={[
+						["today", "Hoy"],
+						["last_7_days", "Últimos 7 días"],
+						["this_month", "Este mes"],
+						["all", "Todo"],
+						["custom", "Personalizado"],
+					]}
+				/>
+				<FilterSelect
+					label="Estado"
+					value={search.status}
+					onChange={(status) => onFilter({ status: status as SalesHistorySearch["status"] })}
+					items={[
+						["all", "Todos los estados"],
+						["completed", "Completadas"],
+						["voided", "Anuladas"],
+					]}
+				/>
+				<FilterSelect
+					label="Método de pago"
+					value={search.paymentMethod}
+					onChange={(paymentMethod) =>
+						onFilter({ paymentMethod: paymentMethod as SalesHistorySearch["paymentMethod"] })
+					}
+					items={[
+						["all", "Todos los métodos"],
+						["cash", "Efectivo"],
+						["yape", "Yape"],
+						["plin", "Plin"],
+						["card", "Tarjeta"],
+						["bank_transfer", "Transferencia"],
+					]}
+				/>
+			</div>
+			<div className="relative mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+				{search.range === "custom" && (
+					<>
+						<LabeledInput
+							label="Desde"
+							type="date"
+							value={search.from ?? ""}
+							onChange={(from) => onFilter({ from: from || null })}
+						/>
+						<LabeledInput
+							label="Hasta"
+							type="date"
+							value={search.to ?? ""}
+							onChange={(to) => onFilter({ to: to || null })}
+						/>
+					</>
+				)}
+				<LabeledInput
+					label="Sesión de caja"
+					value={search.cashSessionId ?? ""}
+					placeholder="ID de sesión"
+					onChange={(cashSessionId) => onFilter({ cashSessionId: cashSessionId || null })}
+				/>
+				<FilterSelect
+					label="Orden"
+					value={search.sort}
+					onChange={(sort) => onFilter({ sort: sort as SalesHistorySearch["sort"] })}
+					items={[
+						["newest", "Más recientes"],
+						["oldest", "Más antiguas"],
+						["total-desc", "Total mayor"],
+						["total-asc", "Total menor"],
+					]}
+				/>
+				<FilterSelect
+					label="Tamaño de página"
+					value={String(search.pageSize)}
+					onChange={(pageSize) => onFilter({ pageSize: Number(pageSize) as 25 | 50 | 100 })}
+					items={[
+						["25", "25 por página"],
+						["50", "50 por página"],
+						["100", "100 por página"],
+					]}
+				/>
+			</div>
+			<div className="relative mt-3 flex justify-end">
+				<Button variant="ghost" size="sm" onClick={onClear}>
+					Limpiar filtros
+				</Button>
+			</div>
+		</section>
+	);
 }
 
-function SaleCard({ sale, onClick }: SaleCardProps) {
-	const statusLabel = sale.status === "completed" ? "Completada" : "Anulada";
-	const statusColor = sale.status === "completed" ? "text-green-600" : "text-red-600";
+function SalesList({
+	sales,
+	onView,
+}: {
+	sales: SaleHistorySummary[];
+	onView(saleId: string): void;
+}) {
+	return (
+		<section className="overflow-hidden rounded-xl border bg-card">
+			<div className="space-y-2 p-2 md:hidden">
+				{sales.map((sale) => (
+					<SaleCard key={sale.id} sale={sale} onView={onView} />
+				))}
+			</div>
+			<div className="hidden md:block">
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead>Venta</TableHead>
+							<TableHead>Fecha</TableHead>
+							<TableHead>Productos</TableHead>
+							<TableHead>Pagos</TableHead>
+							<TableHead>Estado</TableHead>
+							<TableHead className="text-right">Total</TableHead>
+							<TableHead />
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{sales.map((sale) => (
+							<TableRow key={sale.id}>
+								<TableCell className="font-semibold">{sale.formattedSaleNumber}</TableCell>
+								<TableCell>{formatSalesDate(sale.createdAt)}</TableCell>
+								<TableCell>
+									{sale.itemCount} uds. · {sale.lineCount} líneas
+								</TableCell>
+								<TableCell>
+									{sale.paymentMethods.map((method) => PAYMENT_METHOD_LABELS[method]).join(", ")}
+								</TableCell>
+								<TableCell>
+									<StatusBadge status={sale.status} />
+								</TableCell>
+								<TableCell className="text-right font-semibold tabular-nums">
+									{formatMoney(sale.totalCents)}
+								</TableCell>
+								<TableCell>
+									<Button variant="outline" size="sm" onClick={() => onView(sale.id)}>
+										Ver detalle
+									</Button>
+								</TableCell>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			</div>
+		</section>
+	);
+}
 
-	const methodsLabel = sale.paymentMethods
-		.map((m) => {
-			switch (m) {
-				case "cash":
-					return "Efectivo";
-				case "yape":
-					return "Yape";
-				case "plin":
-					return "Plin";
-				case "card":
-					return "Tarjeta";
-				case "bank_transfer":
-					return "Transferencia";
-				default:
-					return m;
-			}
-		})
-		.join(", ");
-
+function SaleCard({ sale, onView }: { sale: SaleHistorySummary; onView(saleId: string): void }) {
 	return (
 		<button
 			type="button"
-			className="w-full rounded-lg border bg-card p-4 text-left transition-colors hover:bg-accent/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-			onClick={onClick}
+			className="min-h-24 w-full rounded-xl border bg-background p-4 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+			onClick={() => onView(sale.id)}
 		>
-			<div className="flex items-start justify-between">
-				<div className="space-y-1">
-					<div className="flex items-center gap-2">
-						<h3 className="font-semibold">Venta #{sale.saleNumber}</h3>
-						<span className={`text-xs font-medium ${statusColor}`}>{statusLabel}</span>
+			<div className="flex justify-between gap-3">
+				<div>
+					<div className="flex flex-wrap items-center gap-2">
+						<strong>{sale.formattedSaleNumber}</strong>
+						<StatusBadge status={sale.status} />
 					</div>
-					<p className="text-sm text-muted-foreground">
-						{formatShortDate(sale.createdAt)} · {sale.itemCount} items
+					<p className="mt-1 text-xs text-muted-foreground">{formatSalesDate(sale.createdAt)}</p>
+					<p className="mt-2 text-xs">
+						{sale.itemCount} uds. ·{" "}
+						{sale.paymentMethods.map((method) => PAYMENT_METHOD_LABELS[method]).join(", ")}
 					</p>
-					<p className="text-xs text-muted-foreground">{methodsLabel}</p>
 				</div>
-				<div className="text-right">
-					<p className="text-lg font-semibold tabular-nums">{formatMoney(sale.totalCents)}</p>
-				</div>
+				<strong className="text-lg tabular-nums">{formatMoney(sale.totalCents)}</strong>
 			</div>
 		</button>
 	);
 }
-
+function StatusBadge({ status }: { status: "completed" | "voided" }) {
+	return (
+		<Badge variant={status === "voided" ? "destructive" : "secondary"}>
+			{status === "voided" ? "Anulada" : "Completada"}
+		</Badge>
+	);
+}
+function EmptyState({ hasAnySale }: { hasAnySale: boolean }) {
+	return (
+		<div className="flex min-h-[38vh] items-center justify-center rounded-xl border border-dashed bg-card">
+			<div className="max-w-sm space-y-3 px-5 text-center">
+				<HugeiconsIcon icon={ShoppingBag03Icon} className="mx-auto size-12 text-muted-foreground" />
+				<h2 className="text-lg font-semibold">
+					{hasAnySale
+						? "No encontramos ventas con esos filtros."
+						: "Todavía no hay ventas registradas."}
+				</h2>
+				{!hasAnySale && (
+					<p className="text-sm text-muted-foreground">Las ventas completadas aparecerán aquí.</p>
+				)}
+			</div>
+		</div>
+	);
+}
 function SalesListSkeleton() {
+	const rows = ["first", "second", "third", "fourth", "fifth"];
 	return (
 		<div className="space-y-2">
-			{Array.from({ length: 5 }).map((_, i) => (
-				<Skeleton key={`${i}-sketon-history`} className="h-24 w-full" />
+			{rows.map((row) => (
+				<Skeleton key={row} className="h-24 w-full" />
 			))}
 		</div>
 	);
 }
-
-function EmptyState() {
+function Pagination({
+	result,
+	onPage,
+}: {
+	result: {
+		page: number;
+		totalPages: number;
+		totalCount: number;
+		hasPreviousPage: boolean;
+		hasNextPage: boolean;
+	};
+	onPage(page: number): void;
+}) {
 	return (
-		<div className="flex min-h-[40vh] items-center justify-center rounded-xl border bg-card">
-			<div className="space-y-3 text-center">
-				<HugeiconsIcon icon={ShoppingBag03Icon} className="mx-auto size-12 text-muted-foreground" />
-				<h3 className="text-lg font-semibold">No hay ventas</h3>
-				<p className="text-sm text-muted-foreground">
-					No se encontraron ventas con los filtros seleccionados
-				</p>
+		<div className="flex flex-col gap-3 rounded-xl border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
+			<p className="text-sm text-muted-foreground">
+				Página {result.page} de {result.totalPages} · {result.totalCount} ventas
+			</p>
+			<div className="flex gap-2">
+				<Button
+					variant="outline"
+					disabled={!result.hasPreviousPage}
+					onClick={() => onPage(result.page - 1)}
+				>
+					Anterior
+				</Button>
+				<Button
+					variant="outline"
+					disabled={!result.hasNextPage}
+					onClick={() => onPage(result.page + 1)}
+				>
+					Siguiente
+				</Button>
 			</div>
 		</div>
+	);
+}
+function FilterSelect({
+	label,
+	value,
+	onChange,
+	items,
+}: {
+	label: string;
+	value: string;
+	onChange(value: string): void;
+	items: Array<[string, string]>;
+}) {
+	const labelId = useId();
+	return (
+		<div className="grid gap-1 text-xs font-medium text-muted-foreground">
+			<span id={labelId}>{label}</span>
+			<Select value={value} onValueChange={(next) => next && onChange(String(next))}>
+				<SelectTrigger className="w-full bg-background" aria-labelledby={labelId}>
+					<SelectValue />
+				</SelectTrigger>
+				<SelectContent>
+					{items.map(([itemValue, itemLabel]) => (
+						<SelectItem key={itemValue} value={itemValue}>
+							{itemLabel}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
+		</div>
+	);
+}
+function LabeledInput({
+	label,
+	onChange,
+	...props
+}: { label: string; onChange(value: string): void } & Omit<
+	React.ComponentProps<typeof Input>,
+	"onChange"
+>) {
+	const generatedId = useId();
+	const inputId = props.id ?? generatedId;
+	return (
+		<label htmlFor={inputId} className="grid gap-1 text-xs font-medium text-muted-foreground">
+			<span>{label}</span>
+			<Input
+				{...props}
+				id={inputId}
+				onChange={(event) => onChange(event.target.value)}
+				className="bg-background"
+			/>
+		</label>
 	);
 }
