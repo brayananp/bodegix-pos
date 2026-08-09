@@ -1,5 +1,10 @@
 # 15. Hoja de ruta de implementación
 
+## Fase 7 — completada
+
+Módulo `reporting`, esquema v7, `/summary`, proyección diaria reactiva, checklist y documentación
+implementados. Próxima fase: **Fase 8 — Respaldo, restauración y portabilidad de datos**.
+
 ## Fase 2 — completada
 
 Catálogo de productos/categorías, composición compartida de formularios, persistencia
@@ -12,7 +17,7 @@ Sheet contextual, diagnóstico, migración v2 y pruebas desktop/móvil.
 
 ## Próxima fase
 
-Fase 4 — Caja, apertura y movimientos de efectivo.
+Fase 8 — Respaldo, restauración y portabilidad de datos.
 
 ## Principio de ejecución
 
@@ -153,11 +158,11 @@ Tareas:
 **Módulo**: `reporting` (sin dominio artificial)
 
 Tareas:
-- [ ] Proyecciones Dexie optimizadas:
+- [x] Proyecciones Dexie optimizadas:
   - `getDailySummary(date)`: ventas, total por método, tickets emitidos, productos vendidos
   - `getTopProducts(date, n=10)`
   - `getLowStockSummary`
-- [ ] Pantalla `/summary` dashboard diario
+- [x] Pantalla `/summary` dashboard diario
 - [ ] Archivos:
   ```text
   reporting/
@@ -166,7 +171,7 @@ Tareas:
   ├── application/get-low-stock-summary.ts
   └── infrastructure/dexie-report-queries.ts
   ```
-- [ ] Performance: resumen diario calculado en < 100 ms con 1 mes de datos
+- [x] Consulta diaria indexada y relaciones cargadas en lote, sin N+1
 
 ---
 
@@ -252,5 +257,5 @@ Tareas:
 ## Estado actualizado
 
 Fase 6 implementa historial y anulación completa con persistencia v6. La siguiente fase es
-**Fase 7 — Resumen operativo y cierre diario**; devoluciones posteriores al cierre continúan fuera
-del MVP.
+**Fase 8 — Respaldo, restauración y portabilidad de datos**; devoluciones posteriores al cierre
+continúan fuera del MVP.

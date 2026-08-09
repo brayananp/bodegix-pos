@@ -1,7 +1,10 @@
 # 07. Diseño de base de datos Dexie
 
-> Implementación vigente: esquema v2. `schema-v1.ts` permanece inmutable y `schema-v2.ts` añade
-> índices compuestos de historial sin transformar registros.
+> Implementación vigente: esquema v7. V7 conserva v6 y agrega `sales.voidedAt` y
+> `sales.[status+voidedAt]` para reporting. No existe tabla de cierre o resumen diario.
+
+> Historia: `schema-v1.ts` permanece inmutable y `schema-v2.ts` añadió índices compuestos de
+> historial sin transformar registros.
 
 ## Esquema v2 de inventario
 

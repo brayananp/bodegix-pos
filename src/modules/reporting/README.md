@@ -12,4 +12,5 @@ Consultas y proyecciones de lectura para resúmenes y reportes.
 
 ## Estado actual
 
-Fase 0: solo se define el límite del módulo y la API pública.
+Fase 7 completada. La API pública, métricas, periodos y límites se documentan en
+`docs/modules/reporting.md` y `docs/reporting/`.

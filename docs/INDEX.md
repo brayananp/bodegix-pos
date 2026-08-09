@@ -21,6 +21,8 @@
 | [database-schema-v4.md](./database-schema-v4.md) | Borrador de carrito (Fase 5) |
 | [database-schema-v5.md](./database-schema-v5.md) | **Anulación de ventas (Fase 6) — NUEVO** |
 | [database-schema-v6.md](./database-schema-v6.md) | Índice de total para orden paginado del historial |
+| [database-schema-v7.md](./database-schema-v7.md) | Índices de anulaciones por periodo |
+| [modules/reporting.md](./modules/reporting.md) | Proyección operativa diaria read-only |
 | [database-migrations.md](./database-migrations.md) | Estrategia de migraciones y versionado |
 | [storage-persistence.md](./storage-persistence.md) | StorageManager API y prevención de cuota excedida |
 
@@ -123,7 +125,7 @@ Estos documentos son especificaciones iniciales. La **fuente de verdad** es el c
 | [08-application-architecture.md](./08-application-architecture.md) | Ver architecture.md |
 | [09-offline-pwa-strategy.md](./09-offline-pwa-strategy.md) | Pendiente Fase 9 |
 | [10-payments-and-cash.md](./10-payments-and-cash.md) | Ver modules/cash + payments/ |
-| [11-backup-and-restore.md](./11-backup-and-restore.md) | Pendiente Fase 7 |
+| [11-backup-and-restore.md](./11-backup-and-restore.md) | Pendiente Fase 8 |
 | [12-security-and-privacy.md](./12-security-and-privacy.md) | Pendiente |
 | [13-ui-ux-specification.md](./13-ui-ux-specification.md) | Ver ui/*.md |
 | [14-testing-strategy.md](./14-testing-strategy.md) | Ver testing.md |
@@ -142,7 +144,7 @@ Estos documentos son especificaciones iniciales. La **fuente de verdad** es el c
 | **Fase 4** | ✅ Completado | [modules/cash.md](./modules/cash.md), [database-schema-v3.md](./database-schema-v3.md) |
 | **Fase 5** | ✅ Completado | [modules/sales.md](./modules/sales.md), [database-schema-v4.md](./database-schema-v4.md), [PHASE-5-SUMMARY.md](./PHASE-5-SUMMARY.md) |
 | **Fase 6** | ✅ Completado | [modules/sales.md](./modules/sales.md), [database-schema-v6.md](./database-schema-v6.md), [PHASE-6-SUMMARY.md](./PHASE-6-SUMMARY.md) |
-| Fase 7 | 🔜 Próxima | Resumen operativo y cierre diario |
+| **Fase 7** | ✅ Completado | [modules/reporting.md](./modules/reporting.md), [ui/daily-summary-ui.md](./ui/daily-summary-ui.md), [database-schema-v7.md](./database-schema-v7.md) |
 | Fase 8 | 📋 Planeada | Backup y exportación |
 | Fase 9 | 📋 Planeada | Settings avanzado |
 | Fase 10 | 📋 Planeada | PWA completa + service worker |
@@ -157,7 +159,7 @@ Estos documentos son especificaciones iniciales. La **fuente de verdad** es el c
 
 ### Para entender la base de datos
 1. [local-database.md](./local-database.md) — Fundamentos
-2. [database-schema-v6.md](./database-schema-v6.md) — Esquema actual
+2. [database-schema-v7.md](./database-schema-v7.md) — Esquema actual
 3. [database-migrations.md](./database-migrations.md) — Versionado
 
 ### Para implementar ventas

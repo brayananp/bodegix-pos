@@ -10,7 +10,9 @@ import {
 	registerSchemaV2,
 	registerSchemaV3,
 	registerSchemaV4,
-	SCHEMA_V6,
+	registerSchemaV5,
+	registerSchemaV6,
+	SCHEMA_V7,
 } from "./schema";
 
 let database: BodegixDatabase | undefined;
@@ -35,7 +37,7 @@ describe("Dexie e IndexedDB", () => {
 		await db.open();
 
 		expect(db.verno).toBe(DATABASE_SCHEMA_VERSION);
-		expect(db.tables.map(({ name }) => name).sort()).toEqual(Object.keys(SCHEMA_V6).sort());
+		expect(db.tables.map(({ name }) => name).sort()).toEqual(Object.keys(SCHEMA_V7).sort());
 		expect(db.categories.schema.indexes.map(({ name }) => name)).toEqual([
 			"normalizedName",
 			"isActive",
@@ -71,8 +73,10 @@ describe("Dexie e IndexedDB", () => {
 				"cashSessionId",
 				"status",
 				"createdAt",
+				"voidedAt",
 				"totalCents",
 				"[status+createdAt]",
+				"[status+voidedAt]",
 				"[cashSessionId+createdAt]",
 			],
 			saleItems: ["saleId", "productId", "[saleId+productId]"],
@@ -92,6 +96,37 @@ describe("Dexie e IndexedDB", () => {
 		for (const table of db.tables) {
 			expect(table.schema.indexes.map(({ name }) => name)).toEqual(expectedIndexes[table.name]);
 		}
+	});
+
+	it("migra v6 a v7 conservando ventas y agrega índices de anulaciones", async () => {
+		const databaseName = `bodegix-reporting-migration-${crypto.randomUUID()}`;
+		const legacy = new Dexie(databaseName);
+		registerSchemaV1(legacy);
+		registerSchemaV2(legacy);
+		registerSchemaV3(legacy);
+		registerSchemaV4(legacy);
+		registerSchemaV5(legacy);
+		registerSchemaV6(legacy);
+		await legacy.open();
+		await legacy.table("sales").add({
+			id: "sale-v6",
+			saleNumber: 1,
+			cashSessionId: "cash-v6",
+			subtotalCents: 1_000,
+			totalCents: 1_000,
+			status: "voided",
+			createdAt: 1,
+			voidedAt: 2,
+			voidReason: "Prueba",
+		});
+		legacy.close();
+
+		database = new BodegixDatabase(databaseName);
+		await database.open();
+		expect(await database.sales.get("sale-v6")).toMatchObject({ voidedAt: 2 });
+		expect(database.sales.schema.indexes.map(({ name }) => name)).toEqual(
+			expect.arrayContaining(["voidedAt", "[status+voidedAt]"]),
+		);
 	});
 
 	it("migra una instalación v1 a v2 conservando productos y movimientos", async () => {
@@ -225,7 +260,7 @@ describe("Dexie e IndexedDB", () => {
 
 		database = new BodegixDatabase(databaseName);
 		await database.open();
-		expect(database.verno).toBe(6);
+		expect(database.verno).toBe(DATABASE_SCHEMA_VERSION);
 		expect(await database.salePayments.get("payment-v4")).toMatchObject({
 			amountCents: 1_500,
 			voidedAt: null,
@@ -321,7 +356,7 @@ describe("Dexie e IndexedDB", () => {
 
 		expect(result.diagnostics.status).toBe("pass");
 		expect(deep.status).toBe("pass");
-		expect(deep.checks).toHaveLength(14);
+		expect(deep.checks).toHaveLength(15);
 	});
 
 	it("detecta configuración inválida sin repararla", async () => {

@@ -1,6 +1,11 @@
 # Bodegix POS
 
-## Estado: Fase 6 ✅
+## Estado: Fase 7 ✅
+
+La Fase 7 incorpora `/summary` y el módulo `reporting`: una proyección diaria reactiva y de solo
+lectura con ventas, pagos, caja, inventario y checklist. `CashSession` continúa siendo el único
+cierre financiero; no existe tabla ni snapshot diario. El esquema actual es v7 y solo agrega índices
+para anulaciones por fecha.
 
 El sistema de ventas está completo con historial y anulación de transacciones: búsqueda y filtrado de ventas históricas, detalle completo de ventas, y anulación compensatoria de ventas con reglas estrictas de sesión de caja.
 
@@ -75,7 +80,7 @@ Sistema de historial y anulación de ventas:
 - Interfaz responsive con Dialog (desktop) y Drawer (móvil)
 - 13 pruebas E2E completas
 
-**Siguiente fase:** Fase 7 — Módulo reporting + resumen diario
+**Siguiente fase:** Fase 8 — Respaldo, restauración y portabilidad de datos
 
 ## Stack tecnológico
 
@@ -213,7 +218,7 @@ Todavía **no contiene:**
 | **Fase 4** | Caja, apertura y movimientos de efectivo ✅ |
 | **Fase 5** | Ventas, carrito y pagos ✅ |
 | **Fase 6** | Historial de ventas y anulación de transacciones ✅ |
-| Fase 7 | Módulo reporting + resumen diario |
+| **Fase 7** | Módulo reporting + resumen diario ✅ |
 | Fase 8 | Módulo backup + exportación |
 | Fase 9 | Módulo settings + configuración |
 | Fase 10 | PWA completa + service worker offline |
@@ -229,7 +234,8 @@ Todavía **no contiene:**
 - [Esquema v2](docs/database-schema-v2.md)
 - [Esquema v3](docs/database-schema-v3.md)
 - [Esquema v4](docs/database-schema-v4.md)
-- [Esquema v6](docs/database-schema-v6.md)
+- [Esquema v7](docs/database-schema-v7.md)
+- [Módulo reporting](docs/modules/reporting.md)
 - [Migraciones](docs/database-migrations.md)
 - [Persistencia de almacenamiento](docs/storage-persistence.md)
 - [Módulo de inventario](docs/modules/inventory.md)
@@ -251,4 +257,4 @@ Todavía **no contiene:**
 
 `/sales` ofrece historial paginado, filtros restaurables, detalle histórico y anulación completa
 solo en la sesión original abierta. La compensación es atómica: conserva la venta, anula pagos,
-restaura stock con `sale_void` y no crea movimientos de caja. Esquema actual: v6.
+restaura stock con `sale_void` y no crea movimientos de caja. Esquema de esa fase: v6.

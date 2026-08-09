@@ -1,5 +1,11 @@
 # Convenciones de Bodegix POS
 
+## Reporting
+
+Nombrar periodos con `endExclusive`; no usar “día cerrado” para un estado derivado. Diferenciar
+“venta creada y anulada” de “anulación procesada”, y etiquetar stock como actual. Toda agregación
+monetaria usa centavos enteros seguros.
+
 ## Inventario
 
 - Solo `modules/inventory/infrastructure` modifica `Product.stockQuantity` después de la creación.

@@ -1,5 +1,11 @@
 # 06. Modelo de dominio
 
+## Proyección DailyOperationalSummary
+
+Reporting no añade entidad. `DailyOperationalSummary` es una proyección efímera compuesta por
+ventas, pagos, caja, inventario, ranking, ventas recientes y checklist. Sus estados son derivados y
+no tienen lifecycle persistente.
+
 ## Inventory (implementado en Fase 3)
 
 `InventoryOperation` expresa stock inicial, entrada, conteo y pérdida. La función pura

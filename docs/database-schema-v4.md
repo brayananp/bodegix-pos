@@ -107,9 +107,9 @@ Cualquier fallo en cualquier paso revierte toda la transacción.
 
 ## Próximas versiones
 
-**v5 (Fase 6):** Anulaciones de venta (`sales.status = "cancelled"`, movimientos de reversión)
+**v5 (Fase 6):** Campos de anulación y referencias de reversión de pagos.
 
-**v6 (Fase 7):** Reportes y resúmenes diarios
+**v6 (Fase 6):** Índice de total para el historial paginado.
 
-**v7 (Fase 8):** Backups y restauración
+**v7 (Fase 7):** Índices de anulaciones por periodo; no crea tablas de resúmenes.
 

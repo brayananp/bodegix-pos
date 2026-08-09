@@ -36,3 +36,9 @@ Referencia: [Dexie Version.upgrade()](https://dexie.org/docs/Version/Version.upg
 V5 transforma pagos existentes para inicializar ambos campos de anulación en `null`. V6 agrega el
 índice `sales.totalCents` sin reescribir datos. Nunca se modifica una versión publicada; ambas se
 registran en orden y se prueban desde bases legacy aisladas.
+
+## Migración v7
+
+V7 agrega los índices `sales.voidedAt` y `sales.[status+voidedAt]` para el resumen diario. No crea
+tablas, no transforma registros y conserva ventas anuladas de v6; una fixture real verifica la
+migración.

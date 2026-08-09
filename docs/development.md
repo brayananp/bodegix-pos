@@ -1,5 +1,11 @@
 # Guía de desarrollo — Bodegix POS
 
+## Desarrollo de reporting
+
+Las fechas civiles se resuelven con `getBusinessDayRange` y la zona de `appSettings`; nunca con
+offsets manuales. Una nueva métrica debe permanecer pura, usar enteros seguros, consultar por lote y
+añadir pruebas unitarias/integración. Reporting no admite comandos ni escrituras.
+
 ## Desarrollo de inventario
 
 - Añade una mutación como intención del `InventoryUnitOfWork`, nunca como actualización directa de

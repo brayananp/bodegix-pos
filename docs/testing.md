@@ -1,5 +1,11 @@
 # Estrategia de pruebas — Bodegix POS
 
+## Cobertura de Fase 7
+
+Incluye fechas IANA y límites semiabiertos, cálculos puros, query Dexie, migración v6→v7,
+search params, componentes, arquitectura read-only y E2E responsive de `/summary`. Las fixtures
+distinguen ventas creadas, anulaciones procesadas, pagos, sesiones cruzadas e inventario actual.
+
 ## Cobertura de inventario
 
 La Fase 3 prueba la transición pura y los estados de stock, mapeadores y search params, componentes

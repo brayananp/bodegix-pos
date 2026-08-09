@@ -1,5 +1,11 @@
 # 08. Arquitectura de la aplicación
 
+## Consulta diaria
+
+`DailyReportingQueries` expresa una capacidad, no un repositorio CRUD. El adaptador Dexie agrupa
+conjuntos diarios; `useDailyOperationalSummary` aporta reactividad de lectura. Aplicación/modelo no
+dependen de React o Dexie.
+
 ## Comandos y consultas de inventario
 
 Los comandos públicos son `initializeProductStock`, `registerStockEntry`,

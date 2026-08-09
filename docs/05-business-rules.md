@@ -1,5 +1,11 @@
 # 05. Reglas de negocio
 
+## Resumen y cierre operativo
+
+El cierre financiero pertenece a `CashSession`. El resumen no se persiste. Solo ventas completadas
+son ingreso, pagos anulados se excluyen, el efectivo inicial no es flujo y las alertas de inventario
+son actuales. Una fecha puede contener varias sesiones o una sesión que cruce medianoche.
+
 ## Catálogo
 
 - Categorías: nombre normalizado único, 2–60 caracteres y desactivación lógica.

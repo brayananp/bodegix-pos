@@ -1,5 +1,11 @@
 # 16. Definition of Done
 
+## Fase 7
+
+Exige query read-only, fechas comerciales, métricas conciliables, varias sesiones, stock claramente
+actual, checklist no persistido, migración v7, diagnóstico, enlaces tipados, responsive y
+`pnpm check:full` sin fallos.
+
 ## Fase 3
 
 La fase exige saldo/ledger atómicos, stock entero no negativo, movimientos append-only, cuatro

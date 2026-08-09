@@ -1,5 +1,11 @@
 # 04. Requisitos funcionales
 
+## RF-REP — Resumen operativo (implementado en Fase 7)
+
+`/summary` permite elegir una fecha no futura y consultar KPI, pagos, sesiones, flujo de caja,
+inventario, ranking, ventas recientes y checklist. La proyección se actualiza con Dexie y ofrece
+enlaces a las pantallas operativas sin modificar registros.
+
 ## RF-CAT — Catálogo (implementado en Fase 2)
 
 - RF-CAT-01: administrar categorías mediante creación, edición y cambio lógico de estado.

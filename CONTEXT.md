@@ -628,12 +628,12 @@ pnpm check:full       # check + E2E
 Antes de editar código relacionado con TanStack, revisar `AGENTS.md` y ejecutar el comando de
 TanStack Intent que coincida con el cambio.
 
-## Calidad de Fase 6
+## Calidad de Fase 7
 
-La suite incluye dominio, formulario, search params, consultas, rollback, doble anulación,
-migraciones v1→v2→v3→v4→v5→v6, diagnóstico y arquitectura. Validación del 2026-08-08: formato,
-lint y typecheck correctos; 38 archivos/304 pruebas Vitest; build cliente/SSR/Nitro; 52 E2E
-Playwright aprobados en Chromium de escritorio y Pixel 5 emulado.
+La suite incluye dominio, formularios, search params, consultas, rollback, migraciones
+v1→v2→v3→v4→v5→v6→v7, diagnóstico y arquitectura. Validación del 2026-08-08: `pnpm check`
+correcto; 43 archivos/339 pruebas Vitest; build cliente/SSR/Nitro; revisión visual desktop/móvil y
+60 E2E Playwright aprobados en Chromium de escritorio y Pixel 5 emulado.
 
 ## Convenciones que deben preservarse
 
@@ -645,27 +645,29 @@ Playwright aprobados en Chromium de escritorio y Pixel 5 emulado.
 - Unitarias junto al archivo; E2E en `e2e/`; arquitectura en `src/test/architecture/`.
 - Una operación crítica que afecta varias tablas usa una única transacción Dexie.
 - No esperar red, temporizadores o UI dentro de una transacción.
-- No modificar los esquemas v1, v2, v3, v4, v5 o v6; crear una versión nueva si cambia la estructura.
+- No modificar los esquemas v1, v2, v3, v4, v5, v6 o v7; crear una versión nueva si cambia la estructura.
 - No introducir campos especulativos de sincronización.
 - No usar importes de coma flotante ni editar stock silenciosamente.
 - No modificar pagos o ventas confirmadas sin anulación explícita.
 - No duplicar métodos de pago en una misma venta.
 - Actualizar documentación y pruebas cuando cambia una invariante.
 
-## Próxima fase autorizada
+## Fase actual completada
 
 ### Fase 7 — Resumen operativo y cierre diario
 
-No está iniciada. Ventas ya registra transacciones completas y permite consultar historial con
-filtros, pero no existe resumen diario automático, reportes por período, productos más vendidos,
-análisis de rentabilidad ni exportación de datos.
+`reporting` implementa una proyección diaria read-only en `/summary`, con fechas `America/Lima`,
+ventas/pagos, sesiones y flujo de caja, inventario, top productos, ventas recientes y checklist.
+No existe cierre o snapshot diario; `CashSession` conserva la autoridad financiera. V7 añade solo
+índices para `voidedAt`. La próxima fase es **Fase 8 — Respaldo, restauración y portabilidad de
+datos**.
 
 ## Documentación de referencia
 
 - Visión y supuestos: `docs/00-decisions-and-assumptions.md` y `docs/01-product-vision.md`.
 - Alcance del MVP: `docs/02-mvp-scope.md`.
 - Requisitos y reglas: `docs/04-functional-requirements.md` y `docs/05-business-rules.md`.
-- Dominio y persistencia: `docs/06-domain-model.md`, `docs/database-schema-v6.md`,
+- Dominio y persistencia: `docs/06-domain-model.md`, `docs/database-schema-v7.md`,
   `docs/database/inventory-integrity.md`, `docs/database/cash-integrity.md`,
   `docs/database/sale-integrity.md` y `docs/local-database.md`.
 - Arquitectura: `docs/architecture.md`, `docs/08-application-architecture.md` y `docs/adr/`.
@@ -678,6 +680,8 @@ análisis de rentabilidad ni exportación de datos.
   `docs/use-cases/void-sale.md`, `docs/ui/sales-history-ui.md`,
   `docs/database/sale-void-integrity.md`, `docs/business-rules/sale-void-policy.md` y
   `docs/PHASE-6-SUMMARY.md`.
+- Reporting: `docs/modules/reporting.md`, `docs/use-cases/daily-operational-summary.md`,
+  `docs/ui/daily-summary-ui.md` y `docs/reporting/`.
 - Formularios y UX: `docs/forms/form-composition.md`, `docs/ui/catalog-ui.md` y
   `docs/ui/overlay-strategy.md`.
 - Desarrollo y calidad: `docs/development.md`, `docs/conventions.md`, `docs/testing.md` y

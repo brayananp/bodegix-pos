@@ -1,7 +1,7 @@
 import type { BodegixDatabase } from "../bodegix-database";
 import { LocalDatabaseError } from "../database-errors";
 import { appSettingsRecordSchema } from "../records";
-import { DATABASE_SCHEMA_VERSION, SCHEMA_V6 } from "../schema";
+import { DATABASE_SCHEMA_VERSION, SCHEMA_V7 } from "../schema";
 import type {
 	DatabaseDiagnosticCheck,
 	DatabaseDiagnosticReport,
@@ -614,7 +614,7 @@ export async function runDatabaseDiagnostics(
 					},
 		);
 
-		const expectedTables = Object.keys(SCHEMA_V6).sort();
+		const expectedTables = Object.keys(SCHEMA_V7).sort();
 		const actualTables = database.tables.map(({ name }) => name).sort();
 		const missingTables = expectedTables.filter((name) => !actualTables.includes(name));
 		checks.push(
@@ -625,6 +625,25 @@ export async function runDatabaseDiagnostics(
 						status: "fail",
 						message: "Faltan tablas del esquema.",
 						details: { missingTables },
+					},
+		);
+
+		const saleIndexNames = new Set(database.sales.schema.indexes.map(({ name }) => name));
+		const missingReportingIndexes = ["voidedAt", "[status+voidedAt]"].filter(
+			(indexName) => !saleIndexNames.has(indexName),
+		);
+		checks.push(
+			missingReportingIndexes.length === 0
+				? {
+						id: "daily-reporting-indexes",
+						status: "pass",
+						message: "Existen los índices temporales del resumen diario.",
+					}
+				: {
+						id: "daily-reporting-indexes",
+						status: "fail",
+						message: "Faltan índices para consultar anulaciones por fecha.",
+						details: { missingReportingIndexes },
 					},
 		);
 

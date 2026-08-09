@@ -642,3 +642,58 @@ describe("Arquitectura — historial y anulación de ventas", () => {
 		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
 	});
 });
+
+describe("Arquitectura — reporting diario", () => {
+	const productionFiles = (directory: string) =>
+		collectFiles(directory).filter(
+			(file) => !file.endsWith(".test.ts") && !file.endsWith(".test.tsx"),
+		);
+
+	it("modelo y aplicación son puros y orientados a consultas", () => {
+		const files = [
+			...productionFiles(join(SRC, "modules/reporting/model")),
+			...productionFiles(join(SRC, "modules/reporting/application")),
+		];
+		const violations = files.flatMap((file) =>
+			getImports(file)
+				.filter(
+					(moduleName) =>
+						moduleName === "react" || moduleName.startsWith("dexie") || moduleName.includes("/ui"),
+				)
+				.map((moduleName) => `${relative(SRC, file)}: importa "${moduleName}"`),
+		);
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("reporting no escribe tablas ni define comandos o repositorios CRUD", () => {
+		const violations: string[] = [];
+		for (const file of productionFiles(join(SRC, "modules/reporting"))) {
+			const content = readFileSync(file, "utf-8");
+			if (/\.(?:add|bulkAdd|put|bulkPut|update|delete|bulkDelete|clear)\s*\(/.test(content))
+				violations.push(relative(SRC, file));
+			if (/(?:ReportingRepository|DailyClosingCommand|closeDaily)/.test(content))
+				violations.push(relative(SRC, file));
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("ningún otro módulo depende de reporting", () => {
+		const violations: string[] = [];
+		for (const file of productionFiles(join(SRC, "modules"))) {
+			if (file.includes(join("modules", "reporting"))) continue;
+			for (const moduleName of getImports(file)) {
+				if (moduleName.includes("modules/reporting"))
+					violations.push(`${relative(SRC, file)}: importa "${moduleName}"`);
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("no existen tablas persistentes de cierres o resúmenes diarios", () => {
+		const schemaFiles = productionFiles(join(SRC, "shared/infrastructure/local-db/schema"));
+		const forbidden = /(dailyClosings|dailyReports|dailySummaries|dailyReportSnapshots)/;
+		expect(schemaFiles.filter((file) => forbidden.test(readFileSync(file, "utf-8")))).toHaveLength(
+			0,
+		);
+	});
+});

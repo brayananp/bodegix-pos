@@ -1,5 +1,11 @@
 # 13. Especificación UI/UX
 
+## Resumen operativo (Fase 7)
+
+Página completa `/summary`, navegación diaria sin fechas futuras, cinco KPI y secciones General,
+Ventas, Caja e Inventario. Tiene skeleton, error/reintento, vacíos, checklist y enlaces cruzados. En
+móvil usa una columna y no requiere desplazamiento horizontal.
+
 ## Inventario contextual (Fase 3)
 
 `/inventory` presenta cuatro métricas, pestañas Stock/Movimientos, filtros tipados y paginación.

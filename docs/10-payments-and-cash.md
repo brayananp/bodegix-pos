@@ -1,5 +1,11 @@
 # 10. Pagos y caja
 
+## Uso en reporting
+
+El resumen suma `amountCents` de pagos activos de ventas completadas. Nunca usa efectivo recibido
+como ingreso. El flujo diario excluye apertura; las sesiones cerradas usan su snapshot y las abiertas
+su cálculo actual. El resumen no escribe ni reabre sesiones.
+
 ## Límite de módulo
 
 > Los pagos NO son un módulo independiente en el MVP. Viven dentro de `modules/sales` (ref: [ADR-0011](file:///c:/Users/ALEXIS/PROYECTOS/productos/bodegix-pos/docs/adr/0011-payments-inside-sales.md)).

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { addBusinessDays, getBusinessDayRange, getBusinessToday } from "@/shared/kernel/dates";
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
@@ -20,26 +21,11 @@ export const salesHistorySearchSchema = z.object({
 export type SalesHistorySearch = z.infer<typeof salesHistorySearchSchema>;
 export type SaleHistoryPanelMode = NonNullable<SalesHistorySearch["panel"]>;
 
-function limaDate(timestamp: number): string {
-	const parts = new Intl.DateTimeFormat("en-CA", {
-		timeZone: "America/Lima",
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-	}).formatToParts(timestamp);
-	const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
-	return `${values.year}-${values.month}-${values.day}`;
-}
-
-function limaDayStart(date: string): number {
-	return Date.parse(`${date}T05:00:00.000Z`);
-}
-
 export function resolveSalesDateRange(search: SalesHistorySearch, now = Date.now()) {
 	if (search.range === "all") return { fromDate: undefined, toDate: undefined, error: null };
 	let from: string;
 	let to: string;
-	const today = limaDate(now);
+	const today = getBusinessToday("America/Lima", now);
 	if (search.range === "custom") {
 		if (!search.from || !search.to) {
 			return { fromDate: undefined, toDate: undefined, error: "Selecciona las dos fechas." };
@@ -47,7 +33,7 @@ export function resolveSalesDateRange(search: SalesHistorySearch, now = Date.now
 		from = search.from;
 		to = search.to;
 	} else if (search.range === "last_7_days") {
-		from = limaDate(limaDayStart(today) - 6 * 86_400_000);
+		from = addBusinessDays(today, -6);
 		to = today;
 	} else if (search.range === "this_month") {
 		from = `${today.slice(0, 7)}-01`;
@@ -63,8 +49,8 @@ export function resolveSalesDateRange(search: SalesHistorySearch, now = Date.now
 			error: "La fecha inicial debe ser anterior a la final.",
 		};
 	return {
-		fromDate: limaDayStart(from),
-		toDate: limaDayStart(to) + 86_400_000 - 1,
+		fromDate: getBusinessDayRange(from, "America/Lima").start,
+		toDate: getBusinessDayRange(to, "America/Lima").endExclusive - 1,
 		error: null,
 	};
 }

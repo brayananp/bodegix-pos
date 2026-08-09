@@ -7,6 +7,13 @@ y este proyecto adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## Fase 7 — 2026-08-08
+
+- Añadido resumen operativo diario reactivo en `/summary`.
+- Añadido módulo `reporting` read-only y checklist no persistido.
+- Añadido esquema Dexie v7 con índices de anulaciones por fecha.
+- Añadido `temporal-polyfill@1.0.1` para periodos civiles con zonas IANA.
+
 ## [0.6.0] - 2025-01-XX
 
 ### ✨ Añadido

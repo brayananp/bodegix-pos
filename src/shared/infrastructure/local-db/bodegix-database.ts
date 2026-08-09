@@ -19,6 +19,7 @@ import {
 	registerSchemaV4,
 	registerSchemaV5,
 	registerSchemaV6,
+	registerSchemaV7,
 } from "./schema";
 
 export class BodegixDatabase extends Dexie {
@@ -41,5 +42,6 @@ export class BodegixDatabase extends Dexie {
 		registerSchemaV4(this);
 		registerSchemaV5(this);
 		registerSchemaV6(this);
+		registerSchemaV7(this);
 	}
 }

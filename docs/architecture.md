@@ -1,5 +1,11 @@
 # Arquitectura de Bodegix POS
 
+## Slice reporting (Fase 7)
+
+`reporting` expone un puerto de consulta, un adaptador Dexie en lote y UI reactiva. Es estrictamente
+read-only, no es dependencia de otros módulos y no posee tablas. Proyecta las autoridades de ventas,
+caja e inventario; la decisión completa está en ADR-0019.
+
 ## Slice de ventas (Fase 5)
 
 `modules/sales` es propietario de `sales`, `saleItems`, `salePayments` y `saleDrafts`. Coordina una

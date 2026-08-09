@@ -1,5 +1,11 @@
 # 14. Estrategia de pruebas
 
+## Reporting (Fase 7)
+
+Las pruebas obligan intervalos semiabiertos, zona IANA, no N+1, fuentes correctas de métricas,
+snapshots de caja, checklist y ausencia de escrituras/tablas. Migración, componentes y E2E forman
+parte de la salida de fase.
+
 ## Pirámide de inventario (Fase 3)
 
 - Dominio: transición exhaustiva, enteros, negativos, deltas y estados.
