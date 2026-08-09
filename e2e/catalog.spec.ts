@@ -87,7 +87,10 @@ test("gestiona categorías y productos desde overlays conservando contexto", asy
 		page.locator('[data-slot="badge"]:visible').filter({ hasText: /^Activo$/ }),
 	).toBeVisible();
 
-	await page.getByRole("button", { name: "Editar" }).click();
+	await page
+		.getByRole("tabpanel", { name: "Productos" })
+		.getByRole("button", { name: "Editar" })
+		.click();
 	await page.getByLabel("Nombre", { exact: true }).fill("Agua modificada sin guardar");
 	await page.getByRole("button", { name: "Cerrar" }).click();
 	await expect(page.getByRole("heading", { name: "¿Descartar cambios?" })).toBeVisible();
@@ -106,7 +109,10 @@ test("gestiona categorías y productos desde overlays conservando contexto", asy
 
 	await search.fill("");
 	await page.getByRole("tab", { name: "Categorías" }).click();
-	await page.getByRole("button", { name: "Editar" }).click();
+	await page
+		.getByRole("tabpanel", { name: "Categorías" })
+		.getByRole("button", { name: "Editar" })
+		.click();
 	await expect(page.getByRole("heading", { name: "Editar categoría" })).toBeVisible();
 	await page.getByLabel("Nombre", { exact: true }).fill("Bebidas y jugos");
 	await page.getByRole("button", { name: "Guardar cambios" }).click();

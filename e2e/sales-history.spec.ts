@@ -19,9 +19,14 @@ async function createProductWithStock(page: Page) {
 	await page.getByLabel("Precio de venta").fill("3.50");
 	await page.getByLabel("Stock mínimo").fill("0");
 	await page.getByRole("button", { name: "Crear producto" }).click();
+	await expect(page.getByText("Producto creado")).toBeVisible();
 
 	await page.goto("/inventory");
-	await page.locator("button:visible", { hasText: "Producto para anular" }).first().click();
+	const inventoryProduct = page
+		.locator("button:visible", { hasText: "Producto para anular" })
+		.first();
+	await expect(inventoryProduct).toBeVisible();
+	await inventoryProduct.click();
 	await page.getByRole("button", { name: "Registrar stock inicial" }).click();
 	await page.getByLabel("Cantidad inicial").fill("10");
 	await page.getByRole("button", { name: "Registrar stock inicial" }).last().click();
@@ -96,7 +101,7 @@ test("consulta snapshots y anula en efectivo sin overlays anidados", async ({ pa
 	await expect(page.getByText("V-000001 fue anulada")).toBeVisible();
 	await page.getByRole("button", { name: "Volver al historial" }).click();
 	await expect(
-		page.locator('[data-slot="badge"]:visible').filter({ hasText: "Anulada" }),
+		page.locator('[data-slot="badge"]:visible').filter({ hasText: "Anulada" }).first(),
 	).toBeVisible();
 
 	await page.goto("/inventory");
