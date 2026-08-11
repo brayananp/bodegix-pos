@@ -1,10 +1,11 @@
-import { SidebarProvider } from "@/shared/components/ui/sidebar";
-import { renderWithRouter } from "@/test/setup/test-router";
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { SidebarProvider } from "@/shared/components/ui/sidebar";
+import { renderWithRouter } from "@/test/setup/test-router";
 import { OfflineBadge } from "./app-header";
 import { AppSidebar } from "./app-sidebar";
 import { BottomNav } from "./bottom-nav";
+import { MobileHeaderNav } from "./mobile-header-nav";
 
 vi.mock("@/shared/kernel/network/use-online-status", () => ({
 	useOnlineStatus: vi.fn(() => true),
@@ -76,15 +77,27 @@ describe("BottomNav", () => {
 		expect(nav).toBeInTheDocument();
 	});
 
-	it("muestra todos los ítems de navegación en móvil", async () => {
+	it("muestra solo las cinco operaciones frecuentes", async () => {
 		await renderWithRouter(<BottomNav />);
 		expect(screen.getByText("Venta")).toBeInTheDocument();
 		expect(screen.getByText("Historial")).toBeInTheDocument();
 		expect(screen.getByText("Productos")).toBeInTheDocument();
 		expect(screen.getByText("Inventario")).toBeInTheDocument();
 		expect(screen.getByText("Caja")).toBeInTheDocument();
-		expect(screen.getByText("Resumen")).toBeInTheDocument();
-		expect(screen.getByText("Configuración")).toBeInTheDocument();
+		expect(screen.queryByText("Resumen")).not.toBeInTheDocument();
+		expect(screen.queryByText("Configuración")).not.toBeInTheDocument();
+	});
+});
+
+describe("MobileHeaderNav", () => {
+	it("mantiene resumen y configuración accesibles en el encabezado", async () => {
+		await renderWithRouter(<MobileHeaderNav />, { initialPath: "/settings" });
+		expect(screen.getByRole("navigation", { name: "Accesos secundarios" })).toBeInTheDocument();
+		expect(screen.getByRole("link", { name: "Resumen y reportes diarios" })).toBeInTheDocument();
+		expect(screen.getByRole("link", { name: "Ajustes de la bodega" })).toHaveAttribute(
+			"aria-current",
+			"page",
+		);
 	});
 });
 

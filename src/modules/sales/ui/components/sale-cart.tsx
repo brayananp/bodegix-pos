@@ -82,7 +82,7 @@ export function SaleCart({
 	}
 
 	return (
-		<div className="flex flex-col h-full gap-3">
+		<div className="flex h-full min-h-0 flex-col gap-3">
 			{/* Problemas del carrito */}
 			{review && review.issues.length > 0 && (
 				<SaleDraftIssues
@@ -99,7 +99,7 @@ export function SaleCart({
 					El carrito está vacío
 				</div>
 			) : (
-				<ScrollArea className="flex-1 -mx-1 px-1">
+				<ScrollArea className="-mx-1 min-h-0 flex-1 px-1">
 					<ul aria-label="Ítems del carrito" className="divide-y">
 						{items.map((item) => (
 							<SaleCartItem

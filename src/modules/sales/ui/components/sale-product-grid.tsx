@@ -24,10 +24,10 @@ export function SaleProductGrid({
 }: SaleProductGridProps) {
 	if (isLoading) {
 		return (
-			<div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+			<div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,10.5rem),1fr))] gap-3">
 				{Array.from({ length: 8 }).map((_, i) => (
 					// biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholders
-					<Skeleton key={i} className="h-24 rounded-xl" />
+					<Skeleton key={i} className="h-36 rounded-2xl" />
 				))}
 			</div>
 		);
@@ -48,10 +48,10 @@ export function SaleProductGrid({
 	return (
 		<ul
 			aria-label="Productos disponibles"
-			className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 list-none p-0 m-0"
+			className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,10.5rem),1fr))] gap-3 p-0"
 		>
 			{products.map((product) => (
-				<li key={product.id}>
+				<li key={product.id} className="min-w-0">
 					<SaleProductCard
 						product={product}
 						cartQuantity={cartQuantities[product.id] ?? 0}

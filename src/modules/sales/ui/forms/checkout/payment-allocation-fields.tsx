@@ -1,7 +1,8 @@
+import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Field, FieldGroup } from "@/shared/components/ui/field";
 import { moneyCentsToInput } from "@/shared/kernel/money";
-import { withFieldGroup } from "@/shared/ui/forms";
+import { type SelectFieldOption, withFieldGroup } from "@/shared/ui/forms";
 import { calculateChangeCents, getMethodLabel } from "./checkout-form.mappers";
 import { PAYMENT_METHOD_OPTIONS } from "./checkout-form.options";
 import type { CheckoutPaymentFormValue } from "./checkout-form.types";
@@ -20,6 +21,7 @@ interface PaymentAllocationProps {
 	totalCents: number;
 	onRemove(): void;
 	canRemove: boolean;
+	methodOptions: SelectFieldOption[];
 }
 
 export const PaymentAllocationFields = withFieldGroup({
@@ -29,8 +31,16 @@ export const PaymentAllocationFields = withFieldGroup({
 		totalCents: 0,
 		onRemove: () => {},
 		canRemove: false,
+		methodOptions: PAYMENT_METHOD_OPTIONS,
 	} as PaymentAllocationProps,
-	render: function PaymentAllocationRender({ group, index, totalCents, onRemove, canRemove }) {
+	render: function PaymentAllocationRender({
+		group,
+		index,
+		totalCents,
+		onRemove,
+		canRemove,
+		methodOptions,
+	}) {
 		return (
 			<group.Subscribe
 				selector={(state) => ({
@@ -53,18 +63,22 @@ export const PaymentAllocationFields = withFieldGroup({
 						: 0;
 
 					return (
-						<div className="rounded-lg border bg-card p-4 space-y-3">
+						<div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
 							<div className="flex items-center justify-between gap-2">
-								<span className="text-sm font-medium">{getMethodLabel(method)}</span>
+								<span className="text-sm font-medium">
+									Pago {index + 1} · {getMethodLabel(method)}
+								</span>
 								{canRemove && (
-									<button
+									<Button
 										type="button"
-										className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+										variant="ghost"
+										size="xs"
+										className="text-muted-foreground hover:text-destructive"
 										onClick={onRemove}
 										aria-label={`Eliminar pago ${index + 1}`}
 									>
 										Eliminar
-									</button>
+									</Button>
 								)}
 							</div>
 
@@ -73,7 +87,7 @@ export const PaymentAllocationFields = withFieldGroup({
 									{(field) => (
 										<field.SelectField
 											label="Método"
-											options={PAYMENT_METHOD_OPTIONS}
+											options={methodOptions}
 											aria-label="Método de pago"
 										/>
 									)}

@@ -1,9 +1,7 @@
-import { cn } from "@/shared/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { isNavItemActive, PRIMARY_NAV, SECONDARY_NAV } from "./nav-config";
-
-const ALL_MOBILE_NAV = [...PRIMARY_NAV, ...SECONDARY_NAV] as const;
+import { cn } from "@/shared/lib/utils";
+import { isNavItemActive, MOBILE_BOTTOM_NAV } from "./nav-config";
 
 /**
  * Barra de navegación inferior — solo visible en móvil (md:hidden).
@@ -24,7 +22,7 @@ export function BottomNav() {
 			aria-label="Navegación principal"
 		>
 			<ul className="flex items-stretch">
-				{ALL_MOBILE_NAV.map((item) => {
+				{MOBILE_BOTTOM_NAV.map((item) => {
 					const active = isActive(item.to);
 					return (
 						<li key={item.to} className="flex-1">

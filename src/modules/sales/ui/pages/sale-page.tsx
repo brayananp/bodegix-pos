@@ -1,12 +1,12 @@
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { AppShell } from "@/app/layout/app-shell";
 import { PageHeader } from "@/app/layout/page-header";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { formatMoney } from "@/shared/kernel/money";
-import { getRouteApi, useNavigate } from "@tanstack/react-router";
-import { useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
 import type { CompletedSaleResult, SaleProductListItem } from "../../application";
 import { calculateSaleDraftTotals, formatSaleNumber, isSaleError } from "../../domain";
 import {
@@ -38,6 +38,12 @@ export function SalePage() {
 	const search = routeApi.useSearch();
 	const navigate = useNavigate({ from: "/sale" });
 	const isMobile = useIsMobile();
+	const checkoutPanelRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (isMobile || search.panel !== "checkout") return;
+		checkoutPanelRef.current?.scrollIntoView({ block: "start" });
+	}, [isMobile, search.panel]);
 
 	// ── Búsqueda / filtros ───────────────────────────────────────────
 	const productsResult = useSaleProducts({
@@ -314,13 +320,15 @@ export function SalePage() {
 			{/* Layout escritorio: split panel */}
 			{!isMobile ? (
 				<div className="px-4 md:px-6 pb-8">
-					<div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+					<div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[minmax(0,1fr)_20rem]">
 						{/* Grid de productos */}
 						<section aria-label="Catálogo de productos">
 							{search.panel === "result" && saleResultQuery.data ? (
 								<div className="rounded-xl border p-4">{resultPanel}</div>
 							) : search.panel === "checkout" && cartTotals ? (
-								<div className="rounded-xl border p-4">{checkoutPanel}</div>
+								<div ref={checkoutPanelRef} className="scroll-mt-16 rounded-xl border p-4">
+									{checkoutPanel}
+								</div>
 							) : (
 								<SaleProductGrid
 									products={productsResult.data?.items}

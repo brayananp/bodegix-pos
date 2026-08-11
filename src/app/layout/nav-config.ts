@@ -79,3 +79,14 @@ export const SECONDARY_NAV: readonly NavItem[] = [
 		icon: Settings02Icon,
 	},
 ] as const;
+
+/** Operaciones frecuentes que conservan un objetivo táctil amplio en móvil. */
+export const MOBILE_BOTTOM_NAV: readonly NavItem[] = PRIMARY_NAV.filter(
+	(item) => item.to !== "/summary",
+);
+
+/** Consultas y ajustes secundarios disponibles desde el encabezado móvil. */
+export const MOBILE_HEADER_NAV: readonly NavItem[] = [
+	...PRIMARY_NAV.filter((item) => item.to === "/summary"),
+	...SECONDARY_NAV,
+];

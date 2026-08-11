@@ -31,6 +31,7 @@
     "test:smoke": "playwright test --config=playwright.release.config.ts",
     "check:bundle": "node scripts/check-bundle.mjs",
     "security:audit": "pnpm audit --audit-level=high",
+    "seed:demo:backup": "node scripts/create-demo-seed-backup.mjs",
     "release:artifacts": "node scripts/generate-release-artifacts.mjs",
     "release:check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:performance && pnpm check:bundle && pnpm test:e2e && pnpm test:pwa && pnpm test:a11y && pnpm test:smoke && pnpm security:audit",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",

@@ -109,8 +109,68 @@ test.describe("Bodegix POS — Sidebar desktop", () => {
 	});
 });
 
+test.describe("Bodegix POS — Configuración responsive", () => {
+	test.use({ viewport: { width: 887, height: 698 } });
+
+	test("las pestañas no crean barras de desplazamiento internas", async ({ page }) => {
+		await page.goto("/settings?section=general&panel=null");
+		const tabs = page.getByRole("tablist");
+		await expect(tabs).toBeVisible();
+
+		const overflow = await tabs.evaluate((element) => ({
+			horizontal: element.scrollWidth - element.clientWidth,
+			verticalBehavior: getComputedStyle(element).overflowY,
+		}));
+
+		expect(overflow.horizontal).toBeLessThanOrEqual(0);
+		expect(overflow.verticalBehavior).toBe("visible");
+	});
+
+	test("las pestañas no se superponen en pantallas muy estrechas", async ({ page }) => {
+		await page.setViewportSize({ width: 319, height: 698 });
+		await page.goto("/settings?section=general&panel=null");
+		const tabs = page.getByRole("tablist");
+
+		const layout = await tabs.evaluate((element) => ({
+			pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+			containerVerticalOverflow: element.scrollHeight - element.clientHeight,
+			tabs: [...element.children].map((tab) => ({
+				clientWidth: tab.clientWidth,
+				scrollWidth: tab.scrollWidth,
+			})),
+		}));
+
+		expect(layout.pageOverflow).toBeLessThanOrEqual(0);
+		expect(layout.containerVerticalOverflow).toBeLessThanOrEqual(0);
+		for (const tab of layout.tabs) {
+			expect(tab.scrollWidth).toBeLessThanOrEqual(tab.clientWidth);
+		}
+	});
+});
+
 test.describe("Bodegix POS — Navegación móvil", () => {
 	test.use({ viewport: { width: 390, height: 844 } });
+
+	test("prioriza operaciones abajo y mueve administración al encabezado", async ({ page }) => {
+		await page.goto("/settings?section=general&panel=null");
+		const bottomNav = page.getByRole("navigation", { name: "Navegación principal" });
+		const bottomLinks = bottomNav.getByRole("link");
+
+		await expect(bottomLinks).toHaveCount(5);
+		await expect(bottomNav.getByRole("link", { name: "Ajustes de la bodega" })).toHaveCount(0);
+		await expect(bottomNav.getByRole("link", { name: "Resumen y reportes diarios" })).toHaveCount(
+			0,
+		);
+
+		const overflow = await bottomNav.evaluate(
+			(element) => element.scrollWidth - element.clientWidth,
+		);
+		expect(overflow).toBeLessThanOrEqual(0);
+
+		const headerNav = page.getByRole("navigation", { name: "Accesos secundarios" });
+		await expect(headerNav.getByRole("link", { name: "Resumen y reportes diarios" })).toBeVisible();
+		await expect(headerNav.getByRole("link", { name: "Ajustes de la bodega" })).toBeVisible();
+	});
 
 	test("la barra inferior está presente en móvil", async ({ page }) => {
 		await page.goto("/sale");

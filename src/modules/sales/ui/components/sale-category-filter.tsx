@@ -1,4 +1,5 @@
 import { Button } from "@/shared/components/ui/button";
+import { ScrollArea } from "@/shared/components/ui/scroll-area";
 
 interface Category {
 	id: string;
@@ -15,31 +16,33 @@ export function SaleCategoryFilter({ categories, selectedId, onSelect }: SaleCat
 	if (categories.length === 0) return null;
 
 	return (
-		<fieldset className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none border-0 p-0 m-0">
-			<legend className="sr-only">Filtrar por categoría</legend>
-			<Button
-				type="button"
-				size="sm"
-				variant={selectedId === null ? "default" : "outline"}
-				onClick={() => onSelect(null)}
-				aria-pressed={selectedId === null}
-				className="shrink-0"
-			>
-				Todos
-			</Button>
-			{categories.map((cat) => (
+		<ScrollArea className="h-11 w-full min-w-0" scrollbars="horizontal">
+			<fieldset className="m-0 flex w-max min-w-full gap-1.5 border-0 p-0 pe-1">
+				<legend className="sr-only">Filtrar por categoría</legend>
 				<Button
-					key={cat.id}
 					type="button"
 					size="sm"
-					variant={selectedId === cat.id ? "default" : "outline"}
-					onClick={() => onSelect(cat.id)}
-					aria-pressed={selectedId === cat.id}
+					variant={selectedId === null ? "default" : "outline"}
+					onClick={() => onSelect(null)}
+					aria-pressed={selectedId === null}
 					className="shrink-0"
 				>
-					{cat.name}
+					Todos
 				</Button>
-			))}
-		</fieldset>
+				{categories.map((cat) => (
+					<Button
+						key={cat.id}
+						type="button"
+						size="sm"
+						variant={selectedId === cat.id ? "default" : "outline"}
+						onClick={() => onSelect(cat.id)}
+						aria-pressed={selectedId === cat.id}
+						className="shrink-0"
+					>
+						{cat.name}
+					</Button>
+				))}
+			</fieldset>
+		</ScrollArea>
 	);
 }

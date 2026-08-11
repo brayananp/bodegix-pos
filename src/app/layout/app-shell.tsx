@@ -1,9 +1,10 @@
-import { Separator } from "@/shared/components/ui/separator";
 import { OfflineBanner, usePwa } from "@/app/pwa";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { CashStatusIndicator } from "@/modules/cash/ui/components/cash-status-indicator";
+import { Separator } from "@/shared/components/ui/separator";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/shared/components/ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
 import { BottomNav } from "./bottom-nav";
+import { MobileHeaderNav } from "./mobile-header-nav";
 
 interface AppShellProps {
 	children: React.ReactNode;
@@ -51,6 +52,7 @@ export function AppShell({ children, pageTitle }: AppShellProps) {
 
 					{/* Spacer */}
 					<div className="flex-1" />
+					<MobileHeaderNav />
 					<CashStatusIndicator />
 
 					{/* Badge offline — solo si está sin conexión */}

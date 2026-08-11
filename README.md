@@ -58,6 +58,20 @@ Dexie administra IndexedDB con esquema v7. Configuración permite diagnóstico, 
 `.bodegix` y restauración replace-all con validación temporal, copia previa y recuperación. El archivo
 no está cifrado: debe almacenarse y transferirse de forma segura.
 
+### Datos de demostración
+
+En desarrollo, abre `Configuración → Datos y respaldos` y pulsa **Cargar datos demo** sobre una base
+vacía. El cargador crea catálogo, inventario, cajas, ventas, pagos, una anulación y un carrito
+pendiente usando los casos de uso reales; se detiene si detecta datos existentes.
+
+Con `pnpm dev` activo también puedes generar un respaldo portable repetible:
+
+```bash
+pnpm seed:demo:backup
+```
+
+El archivo se escribe en `artifacts/demo/bodegix-demo-seed.bodegix` y está ignorado por Git.
+
 ## Arquitectura
 
 Monolito modular local-first con módulos `catalog`, `inventory`, `cash`, `sales`, `reporting`, `backup`

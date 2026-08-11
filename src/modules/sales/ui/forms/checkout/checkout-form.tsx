@@ -1,10 +1,10 @@
+import { useState } from "react";
 import { Button } from "@/shared/components/ui/button";
 import { Separator } from "@/shared/components/ui/separator";
 import { createId } from "@/shared/kernel/ids";
 import { formatMoney, moneyCentsToInput } from "@/shared/kernel/money";
 import { useAppForm } from "@/shared/ui/forms";
 import { useOperationBlocker } from "@/shared/ui/operation-safety/use-operation-blocker";
-import { useState } from "react";
 import type { CompletedSaleResult } from "../../../application";
 import type { PaymentMethod } from "../../../domain";
 import {
@@ -12,7 +12,7 @@ import {
 	checkoutValuesToPaymentIntents,
 	createDefaultCheckoutValues,
 } from "./checkout-form.mappers";
-import { checkoutFormOptions } from "./checkout-form.options";
+import { checkoutFormOptions, PAYMENT_METHOD_OPTIONS } from "./checkout-form.options";
 import { validateCheckoutPaymentTotal } from "./checkout-form.schema";
 import type { CheckoutPaymentFormValue, SaleCheckoutFormValues } from "./checkout-form.types";
 import { PaymentAllocationFields } from "./payment-allocation-fields";
@@ -62,7 +62,7 @@ export function CheckoutForm({ totalCents, onComplete, onCancel, onSubmit }: Che
 				e.stopPropagation();
 				void form.handleSubmit();
 			}}
-			className="space-y-4"
+			className="flex flex-col gap-4"
 			aria-label="Formulario de cobro"
 			noValidate
 		>
@@ -72,69 +72,78 @@ export function CheckoutForm({ totalCents, onComplete, onCancel, onSubmit }: Che
 			</div>
 
 			<form.Field name="payments" mode="array">
-				{(field) => {
-					const payments = field.state.value as CheckoutPaymentFormValue[];
-					const remainingCents = calculateRemainingCents(totalCents, payments);
-					const usedMethods = new Set(payments.map((p) => p.method));
+				{(field) => (
+					<form.Subscribe selector={(state) => state.values.payments}>
+						{(paymentValues) => {
+							const payments = paymentValues as CheckoutPaymentFormValue[];
+							const remainingCents = calculateRemainingCents(totalCents, payments);
+							const usedMethods = new Set(payments.map((payment) => payment.method));
 
-					return (
-						<div className="space-y-3">
-							{payments.map((payment, index) => (
-								<PaymentAllocationFields
-									key={payment.key}
-									form={form}
-									fields={`payments[${index}]`}
-									index={index}
-									totalCents={totalCents}
-									canRemove={payments.length > 1}
-									onRemove={() => field.removeValue(index)}
-								/>
-							))}
+							return (
+								<div className="flex flex-col gap-3">
+									{payments.map((payment, index) => (
+										<PaymentAllocationFields
+											key={payment.key}
+											form={form}
+											fields={`payments[${index}]`}
+											index={index}
+											totalCents={totalCents}
+											canRemove={payments.length > 1}
+											onRemove={() => field.removeValue(index)}
+											methodOptions={PAYMENT_METHOD_OPTIONS.filter(
+												(option) =>
+													option.value === payment.method ||
+													!usedMethods.has(option.value as PaymentMethod),
+											)}
+										/>
+									))}
 
-							{remainingCents !== 0 && (
-								<output
-									className={`block text-sm ${remainingCents > 0 ? "text-destructive" : "text-amber-600"}`}
-									aria-live="polite"
-								>
-									{remainingCents > 0
-										? `Pendiente: ${formatMoney(remainingCents)}`
-										: `Excedente: ${formatMoney(Math.abs(remainingCents))}`}
-								</output>
-							)}
-							{remainingCents === 0 && payments.length > 0 && (
-								<output className="block text-sm text-muted-foreground" aria-live="polite">
-									Total cubierto ✓
-								</output>
-							)}
+									{remainingCents !== 0 && (
+										<output
+											className={`block text-sm ${remainingCents > 0 ? "text-destructive" : "text-amber-600"}`}
+											aria-live="polite"
+										>
+											{remainingCents > 0
+												? `Pendiente: ${formatMoney(remainingCents)}`
+												: `Excedente: ${formatMoney(Math.abs(remainingCents))}. Elimina un pago o ajusta los importes.`}
+										</output>
+									)}
+									{remainingCents === 0 && payments.length > 0 && (
+										<output className="block text-sm text-muted-foreground" aria-live="polite">
+											Total cubierto ✓
+										</output>
+									)}
 
-							{payments.length < 5 && (
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									className="w-full"
-									onClick={() => {
-										const available = (
-											["cash", "yape", "plin", "card", "bank_transfer"] as PaymentMethod[]
-										).find((m) => !usedMethods.has(m));
-										const suggestedAmount =
-											remainingCents > 0 ? moneyCentsToInput(remainingCents) : "0.00";
-										field.pushValue({
-											key: createId(),
-											method: available ?? "yape",
-											amount: suggestedAmount,
-											cashReceived: suggestedAmount,
-											operationReference: "",
-											manuallyVerified: false,
-										});
-									}}
-								>
-									+ Agregar método de pago
-								</Button>
-							)}
-						</div>
-					);
-				}}
+									{remainingCents > 0 && payments.length < 5 && (
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											className="w-full"
+											onClick={() => {
+												const available = (
+													["cash", "yape", "plin", "card", "bank_transfer"] as PaymentMethod[]
+												).find((m) => !usedMethods.has(m));
+												if (!available) return;
+												const suggestedAmount = moneyCentsToInput(remainingCents);
+												field.pushValue({
+													key: createId(),
+													method: available,
+													amount: suggestedAmount,
+													cashReceived: suggestedAmount,
+													operationReference: "",
+													manuallyVerified: false,
+												});
+											}}
+										>
+											+ Agregar método de pago
+										</Button>
+									)}
+								</div>
+							);
+						}}
+					</form.Subscribe>
+				)}
 			</form.Field>
 
 			<Separator />

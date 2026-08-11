@@ -1,8 +1,9 @@
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/app/layout/app-shell";
 import { PageHeader } from "@/app/layout/page-header";
-import { LocalStorageStatusCard } from "@/modules/settings";
 import { PwaInstallCard, PwaStatusCard, PwaUpdateCard } from "@/app/pwa";
+import { LocalStorageStatusCard } from "@/modules/settings";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -14,11 +15,10 @@ import {
 	CardTitle,
 } from "@/shared/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
-import { useNavigate, useSearch } from "@tanstack/react-router";
-import type { CreateBackupResult } from "../../model";
-import { getBackupReminderStatus, type BackupReminderStatus } from "../../model";
-import { createBackupServices } from "../../infrastructure";
 import type { CurrentInstallationPreview } from "../../application";
+import { createBackupServices } from "../../infrastructure";
+import type { CreateBackupResult } from "../../model";
+import { type BackupReminderStatus, getBackupReminderStatus } from "../../model";
 import { formatBackupDate } from "../backup-ui.helpers";
 import { CreateBackupOverlay } from "../components/create-backup-overlay";
 import { RestoreBackupSheet } from "../components/restore-backup-sheet";
@@ -36,6 +36,10 @@ export function BackupSettingsPage() {
 	const navigate = useNavigate({ from: "/settings" });
 	const [preview, setPreview] = useState<CurrentInstallationPreview | null>(null);
 	const [loadError, setLoadError] = useState(false);
+	const [demoSeedStatus, setDemoSeedStatus] = useState<"idle" | "loading" | "success" | "error">(
+		"idle",
+	);
+	const [demoSeedMessage, setDemoSeedMessage] = useState<string | null>(null);
 
 	const loadPreview = useCallback(async () => {
 		try {
@@ -52,6 +56,26 @@ export function BackupSettingsPage() {
 
 	function updateSearch(next: Partial<SettingsSearch>) {
 		void navigate({ search: (current) => ({ ...current, ...next }), replace: true });
+	}
+
+	async function loadDemoSeed() {
+		if (!import.meta.env.DEV || demoSeedStatus === "loading") return;
+		setDemoSeedStatus("loading");
+		setDemoSeedMessage(null);
+		try {
+			const { seedDemoDatabase } = await import("@/dev/demo-data/demo-database-seed");
+			const result = await seedDemoDatabase();
+			setDemoSeedStatus("success");
+			setDemoSeedMessage(
+				`${result.products} productos, ${result.sales} ventas y ${result.cashSessions} cajas cargadas. Diagnóstico: ${result.diagnostics}.`,
+			);
+			await loadPreview();
+		} catch (error) {
+			setDemoSeedStatus("error");
+			setDemoSeedMessage(
+				error instanceof Error ? error.message : "No se pudieron cargar los datos demo.",
+			);
+		}
 	}
 
 	const reminder = preview
@@ -78,10 +102,19 @@ export function BackupSettingsPage() {
 					}
 					className="gap-5"
 				>
-					<TabsList variant="line" className="max-w-full overflow-x-auto">
-						<TabsTrigger value="general">General</TabsTrigger>
-						<TabsTrigger value="storage">Almacenamiento</TabsTrigger>
-						<TabsTrigger value="data">Datos y respaldos</TabsTrigger>
+					<TabsList className="grid h-auto! w-full max-w-xl grid-cols-2 p-1 min-[360px]:grid-cols-3">
+						<TabsTrigger value="general" className="h-9 min-w-0 px-1 text-xs sm:px-2 sm:text-sm">
+							General
+						</TabsTrigger>
+						<TabsTrigger value="storage" className="h-9 min-w-0 px-1 text-xs sm:px-2 sm:text-sm">
+							Almacenamiento
+						</TabsTrigger>
+						<TabsTrigger
+							value="data"
+							className="col-span-2 h-9 min-w-0 px-1 text-xs min-[360px]:col-span-1 sm:px-2 sm:text-sm"
+						>
+							Datos y respaldos
+						</TabsTrigger>
 					</TabsList>
 					<TabsContent value="general">
 						<div className="grid gap-4 lg:grid-cols-2">
@@ -114,6 +147,41 @@ export function BackupSettingsPage() {
 					</TabsContent>
 					<TabsContent value="data">
 						<div className="grid gap-4 lg:grid-cols-2">
+							{import.meta.env.DEV && (
+								<Card className="border-dashed lg:col-span-2">
+									<CardHeader>
+										<CardTitle>Datos de demostración</CardTitle>
+										<CardDescription>
+											Disponible solo en desarrollo. Carga escenarios coherentes para revisar toda
+											la aplicación y se niega a sobrescribir una base ocupada.
+										</CardDescription>
+										<CardAction>
+											<Badge variant="outline">DEV</Badge>
+										</CardAction>
+									</CardHeader>
+									<CardContent className="flex flex-col gap-3">
+										<Button
+											type="button"
+											variant="outline"
+											disabled={demoSeedStatus === "loading" || (preview?.productCount ?? 0) > 0}
+											onClick={() => void loadDemoSeed()}
+										>
+											{demoSeedStatus === "loading" ? "Cargando datos…" : "Cargar datos demo"}
+										</Button>
+										{demoSeedMessage && (
+											<p
+												className={
+													demoSeedStatus === "error"
+														? "text-sm text-destructive"
+														: "text-sm text-muted-foreground"
+												}
+											>
+												{demoSeedMessage}
+											</p>
+										)}
+									</CardContent>
+								</Card>
+							)}
 							<Card>
 								<CardHeader>
 									<CardTitle>Respaldo manual</CardTitle>

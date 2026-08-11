@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import {
 	Sheet,
@@ -6,7 +7,6 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/shared/components/ui/sheet";
-import type { ReactNode } from "react";
 
 export type SaleMobilePanelMode = "cart" | "checkout" | "result";
 
@@ -39,7 +39,7 @@ export function SaleMobileSheet({ open, mode, onClose, children }: SaleMobileShe
 		>
 			<SheetContent
 				side="bottom"
-				className="h-[92svh] flex flex-col p-0 rounded-t-2xl"
+				className="min-h-0 gap-0 overflow-hidden rounded-t-2xl p-0 data-[side=bottom]:h-[92svh]"
 				aria-describedby="sale-sheet-description"
 			>
 				<SheetHeader className="px-4 pt-4 pb-2 shrink-0">
@@ -48,7 +48,11 @@ export function SaleMobileSheet({ open, mode, onClose, children }: SaleMobileShe
 						{PANEL_DESCRIPTIONS[mode]}
 					</SheetDescription>
 				</SheetHeader>
-				<ScrollArea className="flex-1 px-4 pb-safe">{children}</ScrollArea>
+				{mode === "cart" ? (
+					<div className="min-h-0 flex-1 px-4 pb-safe">{children}</div>
+				) : (
+					<ScrollArea className="min-h-0 flex-1 px-4 pb-safe">{children}</ScrollArea>
+				)}
 			</SheetContent>
 		</Sheet>
 	);
