@@ -4,6 +4,7 @@ dist
 dist-ssr
 *.local
 .env
+.env.local
 .nitro
 .tanstack
 .wrangler
@@ -11,6 +12,8 @@ dist-ssr
 .vinxi
 __unconfig*
 todos.json
+*.bodegix
+/artifacts/release/
 
 # Playwright
 /test-results/
