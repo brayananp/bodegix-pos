@@ -32,6 +32,8 @@ export function IntegerField({
 				type="text"
 				inputMode="numeric"
 				pattern="[0-9]*"
+				min={minimum}
+				max={maximum}
 				value={field.state.value}
 				onBlur={field.handleBlur}
 				onChange={(event) => {
@@ -39,8 +41,6 @@ export function IntegerField({
 					if (next === "" || /^\d+$/.test(next)) field.handleChange(next);
 				}}
 				aria-invalid={isInvalid}
-				aria-valuemin={minimum}
-				aria-valuemax={maximum}
 				{...props}
 			/>
 			{description && <FieldDescription>{description}</FieldDescription>}

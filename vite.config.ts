@@ -17,14 +17,41 @@ const packageJson = JSON.parse(
 
 const PWA_THEME_COLOR = "#16a34a";
 const PWA_BACKGROUND_COLOR = "#ffffff";
+const CONTENT_SECURITY_POLICY = [
+	"default-src 'self'",
+	"base-uri 'self'",
+	"object-src 'none'",
+	"frame-ancestors 'none'",
+	"form-action 'self'",
+	"script-src 'self' 'unsafe-inline'",
+	"style-src 'self' 'unsafe-inline'",
+	"img-src 'self' data: blob:",
+	"font-src 'self'",
+	"connect-src 'self'",
+	"manifest-src 'self'",
+	"worker-src 'self' blob:",
+].join("; ");
+
+const SECURITY_HEADERS = {
+	"Content-Security-Policy": CONTENT_SECURITY_POLICY,
+	"Cross-Origin-Opener-Policy": "same-origin",
+	"Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+	"Referrer-Policy": "no-referrer",
+	"X-Content-Type-Options": "nosniff",
+	"X-Frame-Options": "DENY",
+};
 
 const config = defineConfig({
 	resolve: { tsconfigPaths: true },
+	build: {
+		// Production source maps stay private unless a future release pipeline stores them securely.
+		sourcemap: false,
+	},
 	define: {
 		__APP_VERSION__: JSON.stringify(packageJson.version),
 	},
 	plugins: [
-		devtools(),
+		devtools({ removeDevtoolsOnBuild: true }),
 		VitePWA({
 			outDir: ".output/public",
 			strategies: "generateSW",
@@ -74,7 +101,10 @@ const config = defineConfig({
 			},
 			devOptions: { enabled: false },
 		}),
-		nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+		nitro({
+			rollupConfig: { external: [/^@sentry\//] },
+			routeRules: { "/**": { headers: SECURITY_HEADERS } },
+		}),
 		tailwindcss(),
 		tanstackStart({
 			spa: {

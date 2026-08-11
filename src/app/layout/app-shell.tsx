@@ -1,7 +1,7 @@
 import { Separator } from "@/shared/components/ui/separator";
 import { OfflineBanner, usePwa } from "@/app/pwa";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/shared/components/ui/sidebar";
-import { CashStatusIndicator } from "@/modules/cash";
+import { CashStatusIndicator } from "@/modules/cash/ui/components/cash-status-indicator";
 import { AppSidebar } from "./app-sidebar";
 import { BottomNav } from "./bottom-nav";
 

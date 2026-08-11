@@ -1,4 +1,5 @@
 import { AppShell } from "@/app/layout/app-shell";
+import { RootErrorBoundary } from "@/app/errors/root-error-boundary";
 import { PwaProvider } from "@/app/pwa";
 import { LocalDatabaseProvider } from "@/app/providers/local-database-provider";
 import { DatabaseMaintenanceProvider } from "@/app/providers/database-maintenance-provider";
@@ -28,6 +29,7 @@ export const Route = createRootRoute({
 		],
 	}),
 	shellComponent: RootDocument,
+	errorComponent: RootErrorBoundary,
 	notFoundComponent: NotFoundPage,
 });
 

@@ -95,11 +95,16 @@ export function BackupSettingsPage() {
 										La identidad comercial, moneda y zona horaria se conservan dentro del respaldo.
 									</CardDescription>
 								</CardHeader>
-								<CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-									<Detail label="Negocio" value={preview?.settings.businessName ?? "Cargando…"} />
-									<Detail label="Zona horaria" value={preview?.settings.timezone ?? "Cargando…"} />
-									<Detail label="Moneda" value={preview?.settings.currency ?? "Cargando…"} />
-									<Detail label="Esquema" value="7" />
+								<CardContent>
+									<dl className="grid gap-3 text-sm sm:grid-cols-2">
+										<Detail label="Negocio" value={preview?.settings.businessName ?? "Cargando…"} />
+										<Detail
+											label="Zona horaria"
+											value={preview?.settings.timezone ?? "Cargando…"}
+										/>
+										<Detail label="Moneda" value={preview?.settings.currency ?? "Cargando…"} />
+										<Detail label="Esquema" value="7" />
+									</dl>
 								</CardContent>
 							</Card>
 						</div>
@@ -128,7 +133,7 @@ export function BackupSettingsPage() {
 									)}
 								</CardHeader>
 								<CardContent className="flex flex-col gap-4">
-									<div className="grid gap-3 text-sm sm:grid-cols-2">
+									<dl className="grid gap-3 text-sm sm:grid-cols-2">
 										<Detail
 											label="Último respaldo"
 											value={formatBackupDate(preview?.settings.lastBackupAt ?? null)}
@@ -139,7 +144,7 @@ export function BackupSettingsPage() {
 										/>
 										<Detail label="Productos" value={String(preview?.productCount ?? "—")} />
 										<Detail label="Ventas" value={String(preview?.saleCount ?? "—")} />
-									</div>
+									</dl>
 									<Button type="button" onClick={() => updateSearch({ panel: "backup" })}>
 										Crear respaldo
 									</Button>
