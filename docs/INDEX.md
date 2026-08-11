@@ -218,6 +218,15 @@ Para preguntas, sugerencias o reportes de bugs:
 - [Instalabilidad](pwa/installability.md)
 - [Manifest](pwa/manifest.md)
 - [Despliegue](pwa/deployment-requirements.md)
+
+## Release candidate (Fase 10)
+
+- [Checklist de release](release/release-checklist.md)
+- [Revisión de seguridad](release/security-review.md)
+- [Baseline de rendimiento](release/performance-baseline.md)
+- [Soporte de navegadores](release/browser-support.md)
+- [Limitaciones conocidas](release/known-limitations.md)
+- [Notas de release](release/release-notes.md)
 - [Pruebas](pwa/pwa-testing.md)
 - [ADR 0021](adr/0021-production-pwa-lifecycle.md)
 
