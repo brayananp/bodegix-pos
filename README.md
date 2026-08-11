@@ -272,3 +272,17 @@ Todavía **no contiene:**
 `/sales` ofrece historial paginado, filtros restaurables, detalle histórico y anulación completa
 solo en la sesión original abierta. La compensación es atómica: conserva la venta, anula pagos,
 restaura stock con `sale_void` y no crea movimientos de caja. Esquema de esa fase: v6.
+
+## Fase 9 — PWA de producción
+
+El build genera manifest y Service Worker con actualización manual segura. Tras la primera carga,
+las rutas operativas y los datos Dexie funcionan offline. Configuración muestra instalación,
+conectividad, versión y actualizaciones; dirty forms, checkout y restore bloquean la recarga.
+
+```bash
+pnpm test:pwa
+pnpm check:full
+```
+
+Documentación: [arquitectura PWA](docs/pwa/pwa-architecture.md), [offline](docs/pwa/offline-behavior.md),
+[actualizaciones](docs/pwa/update-strategy.md) y [despliegue](docs/pwa/deployment-requirements.md).

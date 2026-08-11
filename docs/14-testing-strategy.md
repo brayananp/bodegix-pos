@@ -250,3 +250,10 @@ incluidos descarte, botón atrás, recarga y ausencia de errores de consola.
 Unitarias: elegibilidad, motivo, confirmaciones, mapeo y URL. Integración: historial, snapshots,
 pagos, stock, caja, rollback, concurrencia, migración y diagnóstico. Arquitectura: pureza, API
 pública y escritor único. Componentes/E2E: Sheet, navegación, responsive, accesibilidad y recarga.
+
+## Matriz Fase 9
+
+Unitarias/componentes: install status, prompt, display mode, conectividad, update safety, chunk error
+y UI. Arquitectura: aislamiento PWA/Dexie. Playwright producción: manifest/SW/precache, rutas
+directas offline, persistencia y venta/caja/respaldo. Actualización entre dos builds y UI nativa se
+completan con checklist manual documentado.

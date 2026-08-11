@@ -176,3 +176,9 @@ histórica de los datos vivos.
 por índices/lotes y la frontera transaccional. `sales` coordina stock solo dentro de esa unidad de
 trabajo. `cash` continúa como lector de ventas/pagos activos y `inventory` no depende de `sales`.
 La ruta importa únicamente la API pública del módulo.
+
+## Frontera PWA
+
+`app/pwa` administra registro, instalación, conectividad y actualización. Cache Storage contiene
+shell/assets; Dexie conserva negocio. `operation-safety` agrega blockers sin introducir dependencias
+entre slices. Véase `docs/pwa/pwa-architecture.md` y ADR 0021.

@@ -458,3 +458,9 @@ una API pública única desde `src/modules/cash/index.ts`.
 `SaleHistoryQueries` encapsula count, búsqueda, detalle, elegibilidad y resultado. `voidSale` es el
 único comando autorizado y delega en `VoidSaleUnitOfWork`. Dominio/aplicación no importan React ni
 Dexie; rutas no importan infraestructura y componentes no escriben tablas.
+
+## Aplicación PWA en Fase 9
+
+`PwaProvider` consume adaptadores del navegador y coordinadores compartidos. `vite-plugin-pwa`
+produce el worker; ninguna slice comercial lo importa. Service Worker/Cache Storage sirven código y
+Dexie sirve datos. La política completa está en `docs/pwa/`.

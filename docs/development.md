@@ -48,6 +48,12 @@ cd bodegix-pos
 pnpm install
 ```
 
+## Desarrollo PWA
+
+El Service Worker está deshabilitado en `pnpm dev`. Usa `pnpm build` y
+`node .output/server/index.mjs` para inspección real, o `pnpm test:pwa` para automatización. El build
+sincroniza metadatos finales de PWA con Nitro; no edites `.output` manualmente.
+
 ## Desarrollo de Fase 6
 
 El estado del historial vive en search params tipados; el estado sensible del formulario vive en

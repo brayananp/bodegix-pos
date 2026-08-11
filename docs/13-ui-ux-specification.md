@@ -336,3 +336,10 @@ diferencia usa texto Cuadrada/Sobrante/Faltante además del color.
 `/sales` usa tabla en escritorio y tarjetas en móvil. Un único Sheet cubre detalle, formulario y
 resultado; no anida Dialog/Drawer. El formulario usa composición compartida de TanStack Form,
 confirmaciones descritas, guard de dirty state, acción destructiva explícita y resultado `aria-live`.
+
+## Estados PWA
+
+El shell muestra aviso offline no bloqueante. Configuración/General presenta versión, readiness,
+instalación y actualización. El prompt de actualización ofrece `Más tarde` y `Actualizar ahora`,
+explica blockers y nunca recarga solo. Standalone respeta safe areas; instalación no se promete si
+el navegador no expone capacidad.

@@ -146,3 +146,9 @@ Se considera terminada cuando `/sales`, filtros/paginación, detalle histórico,
 confirmaciones por pago, transacción compensatoria, resultado reconstruible, diagnóstico,
 migraciones, documentación y suites unitarias/integración/componentes/arquitectura/E2E pasan sin
 eliminar ni editar ventas, crear cash movements o permitir anulación parcial/posterior al cierre.
+
+## DoD de Fase 9
+
+Se considera terminada cuando manifest/iconos/SW son válidos, primera carga online habilita rutas y
+operaciones offline, IndexedDB sobrevive, instalación degrada correctamente, actualización es
+manual/posponible/bloqueable, errores no resetean datos y pasan `pnpm check`, E2E y `pnpm test:pwa`.

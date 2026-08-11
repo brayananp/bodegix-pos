@@ -209,3 +209,15 @@ Para preguntas, sugerencias o reportes de bugs:
 - Consulta los ADRs para decisiones técnicas
 - Lee el código fuente (es la fuente de verdad definitiva)
 
+## PWA
+
+- [Arquitectura](pwa/pwa-architecture.md)
+- [Service Worker](pwa/service-worker-strategy.md)
+- [Comportamiento offline](pwa/offline-behavior.md)
+- [Actualizaciones](pwa/update-strategy.md)
+- [Instalabilidad](pwa/installability.md)
+- [Manifest](pwa/manifest.md)
+- [Despliegue](pwa/deployment-requirements.md)
+- [Pruebas](pwa/pwa-testing.md)
+- [ADR 0021](adr/0021-production-pwa-lifecycle.md)
+

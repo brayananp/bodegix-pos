@@ -147,3 +147,9 @@ Fase 6 agrega reglas de elegibilidad/motivo/confirmaciones, mapeadores de formul
 consultas paginadas, snapshots, pagos mixtos, stock, resumen de caja derivado, rollback, doble
 anulación, migraciones v4→v5→v6, diagnóstico profundo y límites arquitectónicos. E2E cubre el flujo
 por `/sales` en escritorio y móvil.
+
+## Cobertura PWA
+
+`pnpm test:pwa` usa build de producción y valida manifest, iconos, Service Worker, precache, rutas
+offline, IndexedDB, venta, caja y respaldo. Unitarias cubren instalación, conectividad, safety,
+componentes y chunks obsoletos. `pnpm dev` no sustituye esta suite.

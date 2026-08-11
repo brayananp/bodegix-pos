@@ -154,3 +154,9 @@ URL; dinero contado y motivos viven solo en TanStack Form.
 Usa `completed`/`voided`, `sale`/`sale_void` y `voidOperationReference`. No uses delete, pagos
 negativos ni cash movements para anular. Los filtros se llaman `q`, `status`, `paymentMethod`,
 `range`, `from`, `to`, `cashSessionId`, `page`, `pageSize`, `sort`, `panel` y `saleId`.
+
+## Convenciones PWA
+
+No escribas datos comerciales en Cache Storage ni lógica de negocio en el Service Worker. No actives
+`skipWaiting`, `clientsClaim` o recarga automática. Toda operación que no pueda interrumpirse registra
+un blocker en `operation-safety`; el usuario decide cuándo aplicar el worker `waiting`.

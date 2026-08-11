@@ -134,3 +134,9 @@ arqueo, cierre con diferencia, historial paginado, detalle persistente y estado 
 FR-SALES-06 exige `/sales`, búsqueda por número, filtros por estado/método/fecha/sesión, paginación
 25/50/100, detalle con snapshots y anulación completa reconstruible. El resultado debe sobrevivir
 recarga y la operación no puede editar ni eliminar históricos.
+
+## Fase 9
+
+FR-PWA-09 exige instalación progresiva, primera carga con red, navegación/operación offline,
+indicadores de conectividad, actualización detectable/posponible/manual y conservación de IndexedDB.
+Formularios dirty, checkout, validación/restore y mantenimiento deben bloquear la recarga.

@@ -265,3 +265,9 @@ Tareas:
 Fase 8 implementa respaldo, restauración y portabilidad sin cambiar el esquema v7. La siguiente
 fase es **Fase 9 — PWA, instalación, actualizaciones y endurecimiento offline**; merge, nube y
 sincronización continúan fuera del MVP.
+
+## Estado Fase 9
+
+Fase 9 implementada: manifest, instalación progresiva, Service Worker, navegación offline,
+actualización manual protegida y pruebas sobre producción. Siguiente fase: la definida por el plan
+de producto; sincronización, Background Sync y Push permanecen fuera de alcance.

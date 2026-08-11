@@ -160,3 +160,10 @@ No se prometerá compatibilidad sin pruebas reales en el dispositivo.
 - Vite PWA: https://vite-pwa-org.netlify.app/
 - MDN Storage API: https://developer.mozilla.org/en-US/docs/Web/API/Storage_API
 - MDN persist: https://developer.mozilla.org/en-US/docs/Web/API/StorageManager/persist
+
+## Implementación Fase 9
+
+Se adopta `generateSW`, precache de shell/assets, fallback allowlisted, `registerType: prompt` y
+actualización explícita. Primera visita requiere red; después funcionan Venta, Productos,
+Inventario, Caja, Historial, Resumen, Configuración y Respaldo. No se implementan Background Sync,
+Push ni caché de datos comerciales. Detalle contractual en `docs/pwa/` y ADR 0021.
