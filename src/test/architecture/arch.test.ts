@@ -792,3 +792,38 @@ describe("Arquitectura — respaldo y restauración", () => {
 		).toContain("runWithExclusiveDatabaseMaintenance");
 	});
 });
+
+describe("Arquitectura — PWA", () => {
+	const productionFiles = (directory: string) =>
+		collectFiles(directory).filter(
+			(file) => !file.endsWith(".test.ts") && !file.endsWith(".test.tsx"),
+		);
+
+	it("confina vite-plugin-pwa, Workbox y APIs SW dentro de app/pwa y config", () => {
+		const violations: string[] = [];
+		for (const file of productionFiles(SRC)) {
+			const relativePath = relative(SRC, file);
+			const content = readFileSync(file, "utf-8");
+			if (
+				/(?:virtual:pwa-register|workbox-window|ServiceWorkerRegistration)/.test(content) &&
+				!relativePath.startsWith(join("app", "pwa"))
+			) {
+				violations.push(relativePath);
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("no agrega autoUpdate, runtime APIs, Background Sync ni Push", () => {
+		const config = readFileSync(join(ROOT, "vite.config.ts"), "utf-8");
+		const pwaSource = productionFiles(join(SRC, "app/pwa"))
+			.map((file) => readFileSync(file, "utf-8"))
+			.join("\n");
+		expect(config).toContain('strategies: "generateSW"');
+		expect(config).toContain('registerType: "prompt"');
+		expect(config).not.toContain('registerType: "autoUpdate"');
+		expect(config).not.toContain("runtimeCaching");
+		expect(pwaSource).not.toMatch(/SyncManager|PushManager|Notification\.requestPermission/);
+		expect(pwaSource).not.toMatch(/BodegixDatabase|dexie/);
+	});
+});

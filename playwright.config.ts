@@ -14,11 +14,12 @@ import { defineConfig, devices } from "@playwright/test";
  * En CI el job de E2E depende del job de check que ya hace build.
  */
 
-const E2E_PORT = Number(process.env.E2E_PORT ?? 3001);
+const E2E_PORT = Number(process.env.E2E_PORT ?? 4173);
 const BASE_URL = `http://localhost:${E2E_PORT}`;
 
 export default defineConfig({
 	testDir: "./e2e",
+	testIgnore: "**/pwa/**",
 	fullyParallel: true,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
@@ -45,12 +46,12 @@ export default defineConfig({
 	/**
 	 * Levanta el servidor Nitro usando el build existente.
 	 * No hace build aquí — debe haber un `pnpm build` previo.
-	 * reuseExistingServer: true permite reusar el servidor si ya está corriendo.
+	 * No reutiliza servidores: evita validar accidentalmente otra aplicación en el mismo puerto.
 	 */
 	webServer: {
 		command: `cross-env PORT=${E2E_PORT} node .output/server/index.mjs`,
 		url: BASE_URL,
-		reuseExistingServer: true,
+		reuseExistingServer: false,
 		timeout: 30_000,
 		stdout: "pipe",
 		stderr: "pipe",
