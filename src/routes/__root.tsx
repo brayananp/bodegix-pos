@@ -1,4 +1,5 @@
 import { AppShell } from "@/app/layout/app-shell";
+import { PwaProvider } from "@/app/pwa";
 import { LocalDatabaseProvider } from "@/app/providers/local-database-provider";
 import { DatabaseMaintenanceProvider } from "@/app/providers/database-maintenance-provider";
 import { Toaster } from "@/shared/components/ui/sonner";
@@ -11,7 +12,7 @@ export const Route = createRootRoute({
 	head: () => ({
 		meta: [
 			{ charSet: "utf-8" },
-			{ name: "viewport", content: "width=device-width, initial-scale=1" },
+			{ name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
 			{ title: "Bodegix POS" },
 			{
 				name: "description",
@@ -22,6 +23,8 @@ export const Route = createRootRoute({
 		links: [
 			{ rel: "stylesheet", href: appCss },
 			{ rel: "manifest", href: "/manifest.webmanifest" },
+			{ rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+			{ rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
 		],
 	}),
 	shellComponent: RootDocument,
@@ -42,12 +45,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 					disableTransitionOnChange
 				>
 					<TooltipProvider delay={500}>
-						<LocalDatabaseProvider>
-							<DatabaseMaintenanceProvider>
-								{children}
-								<Toaster position="top-right" richColors closeButton />
-							</DatabaseMaintenanceProvider>
-						</LocalDatabaseProvider>
+						<PwaProvider>
+							<LocalDatabaseProvider>
+								<DatabaseMaintenanceProvider>
+									{children}
+									<Toaster position="top-right" richColors closeButton />
+								</DatabaseMaintenanceProvider>
+							</LocalDatabaseProvider>
+						</PwaProvider>
 					</TooltipProvider>
 				</ThemeProvider>
 				<Scripts />

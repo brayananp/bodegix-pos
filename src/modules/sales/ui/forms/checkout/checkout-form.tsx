@@ -3,6 +3,7 @@ import { Separator } from "@/shared/components/ui/separator";
 import { createId } from "@/shared/kernel/ids";
 import { formatMoney, moneyCentsToInput } from "@/shared/kernel/money";
 import { useAppForm } from "@/shared/ui/forms";
+import { useOperationBlocker } from "@/shared/ui/operation-safety/use-operation-blocker";
 import { useState } from "react";
 import type { CompletedSaleResult } from "../../../application";
 import type { PaymentMethod } from "../../../domain";
@@ -27,6 +28,8 @@ interface CheckoutFormProps {
 
 export function CheckoutForm({ totalCents, onComplete, onCancel, onSubmit }: CheckoutFormProps) {
 	const [formError, setFormError] = useState<string | null>(null);
+	const [isCompleting, setIsCompleting] = useState(false);
+	useOperationBlocker("checkout_in_progress", isCompleting);
 
 	const form = useAppForm({
 		...checkoutFormOptions,
@@ -39,12 +42,15 @@ export function CheckoutForm({ totalCents, onComplete, onCancel, onSubmit }: Che
 				return;
 			}
 			try {
+				setIsCompleting(true);
 				const intents = checkoutValuesToPaymentIntents(value);
 				const result = await onSubmit(intents);
 				form.reset(value);
 				onComplete(result);
 			} catch (error) {
 				setFormError(error instanceof Error ? error.message : "No se pudo completar la venta.");
+			} finally {
+				setIsCompleting(false);
 			}
 		},
 	});

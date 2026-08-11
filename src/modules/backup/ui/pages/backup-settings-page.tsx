@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/app/layout/app-shell";
 import { PageHeader } from "@/app/layout/page-header";
 import { LocalStorageStatusCard } from "@/modules/settings";
+import { PwaInstallCard, PwaStatusCard, PwaUpdateCard } from "@/app/pwa";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -67,7 +68,7 @@ export function BackupSettingsPage() {
 			<PageHeader
 				title="Configuración"
 				description="Administra la instalación, el almacenamiento y la portabilidad de tus datos"
-				badge={<Badge variant="secondary">Fase 8</Badge>}
+				badge={<Badge variant="secondary">Fase 9</Badge>}
 			/>
 			<div className="px-4 pb-8 md:px-6">
 				<Tabs
@@ -83,20 +84,25 @@ export function BackupSettingsPage() {
 						<TabsTrigger value="data">Datos y respaldos</TabsTrigger>
 					</TabsList>
 					<TabsContent value="general">
-						<Card>
-							<CardHeader>
-								<CardTitle>Instalación local</CardTitle>
-								<CardDescription>
-									La identidad comercial, moneda y zona horaria se conservan dentro del respaldo.
-								</CardDescription>
-							</CardHeader>
-							<CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-								<Detail label="Negocio" value={preview?.settings.businessName ?? "Cargando…"} />
-								<Detail label="Zona horaria" value={preview?.settings.timezone ?? "Cargando…"} />
-								<Detail label="Moneda" value={preview?.settings.currency ?? "Cargando…"} />
-								<Detail label="Esquema" value="7" />
-							</CardContent>
-						</Card>
+						<div className="grid gap-4 lg:grid-cols-2">
+							<PwaStatusCard />
+							<PwaInstallCard />
+							<PwaUpdateCard />
+							<Card className="lg:col-span-2">
+								<CardHeader>
+									<CardTitle>Instalación local</CardTitle>
+									<CardDescription>
+										La identidad comercial, moneda y zona horaria se conservan dentro del respaldo.
+									</CardDescription>
+								</CardHeader>
+								<CardContent className="grid gap-3 text-sm sm:grid-cols-2">
+									<Detail label="Negocio" value={preview?.settings.businessName ?? "Cargando…"} />
+									<Detail label="Zona horaria" value={preview?.settings.timezone ?? "Cargando…"} />
+									<Detail label="Moneda" value={preview?.settings.currency ?? "Cargando…"} />
+									<Detail label="Esquema" value="7" />
+								</CardContent>
+							</Card>
+						</div>
 					</TabsContent>
 					<TabsContent value="storage">
 						<LocalStorageStatusCard />

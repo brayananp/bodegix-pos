@@ -9,9 +9,11 @@ import {
 	AlertDialogTitle,
 } from "@/shared/components/ui/alert-dialog";
 import { useBlocker } from "@tanstack/react-router";
+import { useOperationBlocker } from "@/shared/ui/operation-safety/use-operation-blocker";
 import { useFormContext } from "../form-context";
 
 function NavigationGuard({ shouldBlock }: { shouldBlock: boolean }) {
+	useOperationBlocker("dirty_form", shouldBlock);
 	const blocker = useBlocker({
 		shouldBlockFn: () => shouldBlock,
 		enableBeforeUnload: shouldBlock,

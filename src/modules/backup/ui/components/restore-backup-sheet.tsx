@@ -11,6 +11,7 @@ import {
 	SheetTitle,
 } from "@/shared/components/ui/sheet";
 import { useAppForm } from "@/shared/ui/forms";
+import { useOperationBlocker } from "@/shared/ui/operation-safety/use-operation-blocker";
 import { useBlocker } from "@tanstack/react-router";
 import {
 	createBackup,
@@ -47,6 +48,7 @@ export function RestoreBackupSheet({ open, onOpenChange }: RestoreBackupSheetPro
 	const [result, setResult] = useState<RestoreBackupResult | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const locked = stage === "restoring";
+	useOperationBlocker("critical_operation", progress !== null || locked);
 	useBlocker({ shouldBlockFn: () => locked, enableBeforeUnload: locked });
 
 	const form = useAppForm({

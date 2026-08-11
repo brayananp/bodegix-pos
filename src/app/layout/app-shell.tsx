@@ -1,6 +1,6 @@
 import { Separator } from "@/shared/components/ui/separator";
+import { OfflineBanner, usePwa } from "@/app/pwa";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/shared/components/ui/sidebar";
-import { useOnlineStatus } from "@/shared/kernel/network/use-online-status";
 import { CashStatusIndicator } from "@/modules/cash";
 import { AppSidebar } from "./app-sidebar";
 import { BottomNav } from "./bottom-nav";
@@ -21,7 +21,8 @@ interface AppShellProps {
  * el servidor pueda renderizar el estado correcto sin flash.
  */
 export function AppShell({ children, pageTitle }: AppShellProps) {
-	const isOnline = useOnlineStatus();
+	const pwa = usePwa();
+	const isOnline = pwa.browserOnline;
 
 	return (
 		<SidebarProvider
@@ -63,6 +64,16 @@ export function AppShell({ children, pageTitle }: AppShellProps) {
 						</output>
 					)}
 				</header>
+				<OfflineBanner />
+				{pwa.serviceWorker.updateAvailable && pwa.updatePostponed && (
+					<button
+						type="button"
+						className="border-b bg-primary/5 px-4 py-2 text-sm font-medium text-primary"
+						onClick={pwa.showUpdatePrompt}
+					>
+						Nueva versión disponible · Ver actualización
+					</button>
+				)}
 
 				{/* ── Contenido principal ──────────────────────────────── */}
 				{/* pb-16 en móvil deja espacio para la BottomNav fija */}
