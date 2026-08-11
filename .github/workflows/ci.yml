@@ -1,4 +1,4 @@
-name: CI
+name: Release gate
 
 on:
   push:
@@ -7,10 +7,10 @@ on:
     branches: [main, master, develop]
 
 jobs:
-  check:
-    name: Format · Lint · Typecheck · Tests · Build
+  release-check:
+    name: Hardening · Tests · Build · Browser matrix
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
@@ -19,79 +19,42 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 11.20.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24.14.1
           cache: pnpm
 
-      - name: Install dependencies
+      - name: Install dependencies from frozen lockfile
         run: pnpm install --frozen-lockfile
 
-      - name: Format check
-        run: pnpm format:check
+      - name: Install browser matrix
+        run: pnpm exec playwright install --with-deps chromium firefox webkit
 
-      - name: Lint
-        run: pnpm lint
+      - name: Run release candidate gate
+        run: pnpm release:check
 
-      - name: Typecheck
-        run: pnpm typecheck
+      - name: Generate release supply-chain artifacts
+        if: ${{ !cancelled() }}
+        run: pnpm release:artifacts
 
-      - name: Unit & component tests
-        run: pnpm test
-
-      - name: Build
-        run: pnpm build
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-output
-          path: .output/
-          retention-days: 1
-
-  e2e:
-    name: E2E Tests (Playwright)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: check
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-output
-          path: .output/
-
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Run E2E tests
-        run: pnpm test:e2e
-
-      - name: Upload Playwright report
+      - name: Upload production build
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: production-output
+          path: .output/
+          retention-days: 7
+
+      - name: Upload release evidence
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: release-evidence
+          path: |
+            artifacts/release/
+            playwright-report/
+            test-results/
           retention-days: 14
