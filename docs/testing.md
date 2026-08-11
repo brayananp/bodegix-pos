@@ -1,5 +1,12 @@
 # Estrategia de pruebas — Bodegix POS
 
+## Cobertura de respaldo (Fase 8)
+
+Vitest cubre contenedor, hashes, manifest, compatibilidad, recordatorio, nombres y gateways. Las
+integraciones usan `fake-indexeddb`, bases aisladas y restauración real replace-all. Las pruebas
+arquitectónicas confinan Dexie/export-import, pickers, Web Crypto y locks. E2E debe usar fallbacks
+controlados; nunca selectores del sistema operativo.
+
 ## Cobertura de Fase 7
 
 Incluye fechas IANA y límites semiabiertos, cálculos puros, query Dexie, migración v6→v7,

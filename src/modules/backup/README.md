@@ -2,13 +2,14 @@
 
 ## Responsabilidad
 
-Respaldo y restauración de la base de datos local.
+Respaldo completo, inspección segura y restauración replace-all de la base local.
 
 ## Límites del módulo
 
-- **Incluye:** exportar JSON, checksum, validar estructura, restaurar, diagnóstico
-- **Excluye:** almacenamiento en nube (futuro), sincronización (futuro)
+- **Incluye:** contenedor `.bodegix`, SHA-256, validación temporal, copia previa, restore
+  transaccional, recuperación y mantenimiento entre pestañas.
+- **Excluye:** nube, sincronización, merge, restauración parcial, cifrado y firma.
 
 ## Estado actual
 
-Fase 0: solo se define el límite del módulo y la API pública.
+Fase 8 implementada. El contrato detallado vive en `docs/modules/backup.md` y `docs/backup/`.

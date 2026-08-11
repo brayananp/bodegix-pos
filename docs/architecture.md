@@ -1,5 +1,11 @@
 # Arquitectura de Bodegix POS
 
+## Frontera de portabilidad (Fase 8)
+
+`backup` aplica model/application/infrastructure/UI. El modelo desconoce React y Dexie; aplicación
+declara puertos; solo infraestructura importa `dexie-export-import` y APIs del navegador. Todas las
+escrituras operativas cruzan el coordinador compartido y restore usa mantenimiento exclusivo.
+
 ## Slice reporting (Fase 7)
 
 `reporting` expone un puerto de consulta, un adaptador Dexie en lote y UI reactiva. Es estrictamente

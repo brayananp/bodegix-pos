@@ -6,7 +6,7 @@ test("inicializa y conserva la instalación local", async ({ page }) => {
 		if (message.type() === "error") consoleErrors.push(message.text());
 	});
 
-	await page.goto("/settings");
+	await page.goto("/settings?section=storage&panel=null");
 	await expect(page.getByText("Almacenamiento local")).toBeVisible();
 	await expect(page.getByText("Versión del esquema")).toBeVisible();
 	await expect(page.getByText("Aprobado")).toBeVisible();

@@ -1,5 +1,11 @@
 # 05. Reglas de negocio
 
+## BR-08 — Portabilidad
+
+Un respaldo siempre contiene todas las tablas. Restore nunca fusiona ni restaura parcialmente; una
+instalación restaurada adopta `installationId`, correlativo y configuración del archivo. Caja abierta
+y carrito son válidos con advertencia. `lastBackupAt` solo representa una copia manual guardada.
+
 ## Resumen y cierre operativo
 
 El cierre financiero pertenece a `CashSession`. El resumen no se persiste. Solo ventas completadas

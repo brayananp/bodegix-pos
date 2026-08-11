@@ -1,116 +1,31 @@
 # 11. Respaldo y restauración
 
-## Objetivo
+## Objetivo y política
 
-Evitar que la aplicación dependa de la permanencia indefinida del almacenamiento del navegador.
+Bodegix no depende de la permanencia indefinida del navegador. El operador exporta una copia
+completa local y puede restaurarla sin backend. El MVP solo permite replace-all: no hay merge,
+deduplicación, nube, sincronización, ZIP, base64 ni restauración parcial.
 
-## Formato
+## Contrato implementado
 
-Archivo JSON o Blob generado por `dexie-export-import`, envuelto con metadatos propios.
+El archivo `.bodegix` usa Bodegix Backup Format v1: magic header, longitud decimal, manifiesto JSON
+UTF-8 estricto y payload crudo de `dexie-export-import`. SHA-256 protege manifiesto y payload. Se
+limita a 128 MiB, se incluyen todas las tablas de `database.tables` y se guarda con File System
+Access o descarga fallback.
 
-```typescript
-interface BackupEnvelope {
-  format: "bodegix-pos-backup";
-  formatVersion: 1;
-  databaseSchemaVersion: 1;
-  appVersion: string;
+Restore comprueba integridad y compatibilidad, importa primero en una base temporal, ejecuta el
+diagnóstico profundo y la elimina. Antes de tocar producción exige guardar una copia previa y
+escribir `RESTAURAR`. La importación real es transaccional, reemplaza todas las tablas sin borrar la
+base, conserva IDs/`installationId` y ejecuta diagnóstico posterior con recuperación automática.
 
-  installationId: string;
-  businessName: string;
+## Operación y recordatorio
 
-  exportedAt: number;
-  checksum: string;
+`lastBackupAt` solo cambia tras guardar una copia manual. El resumen clasifica el plazo configurado
+como nunca, vigente, próximo o vencido. Caja abierta y carrito pendiente se incluyen con advertencia.
+Web Locks coordinan escrituras compartidas y restore exclusivo; BroadcastChannel bloquea otras
+pestañas durante el mantenimiento.
 
-  summary: {
-    products: number;
-    sales: number;
-    inventoryMovements: number;
-    cashSessions: number;
-  };
-
-  payload: unknown;
-}
-```
-
-## Nombre
-
-```text
-bodegix-pos_<negocio>_<YYYY-MM-DD_HH-mm>.json
-```
-
-## Exportación
-
-1. Ejecutar diagnóstico.
-2. Exportar tablas.
-3. Construir metadatos.
-4. Calcular checksum.
-5. Descargar.
-6. Actualizar `lastBackupAt`.
-7. Mostrar confirmación.
-
-## Importación
-
-1. Seleccionar archivo.
-2. Validar MIME y tamaño.
-3. Parsear.
-4. Validar esquema con Zod.
-5. Verificar checksum.
-6. Comprobar compatibilidad.
-7. Mostrar resumen.
-8. Solicitar confirmación explícita.
-9. Exportar respaldo actual.
-10. Reemplazar datos.
-11. Ejecutar diagnóstico.
-12. Recargar de forma controlada.
-
-## Política del MVP
-
-Solo se permite restauración completa.
-
-No se implementa:
-
-- merge;
-- deduplicación;
-- restauración parcial;
-- resolución de conflictos.
-
-## Recordatorio
-
-Valor inicial recomendado:
-
-```text
-cada 7 días
-```
-
-También se recordará:
-
-- después de 100 ventas desde el último respaldo;
-- antes de una migración relevante;
-- antes de una restauración.
-
-## Pruebas obligatorias
-
-- Exportar una base vacía.
-- Exportar una base con datos.
-- Restaurar en otra instalación.
-- Detectar checksum incorrecto.
-- Rechazar versión futura incompatible.
-- Recuperar después de importación interrumpida.
-- Conservar respaldo previo a la restauración.
-
-## Exportación CSV
-
-No sustituye al respaldo.
-
-CSV se utilizará para:
-
-- ventas;
-- pagos;
-- productos;
-- inventario.
-
-El respaldo completo es el único archivo destinado a restaurar la aplicación.
-
-## Fuente técnica
-
-- Dexie export/import: https://dexie.org/docs/ExportImport/dexie-export-import
+La especificación normativa está dividida en [formato](backup/backup-format-v1.md),
+[integridad](backup/backup-integrity.md), [compatibilidad](backup/backup-compatibility.md),
+[seguridad de restore](backup/restore-safety.md) y
+[mantenimiento cross-tab](backup/cross-tab-maintenance.md).

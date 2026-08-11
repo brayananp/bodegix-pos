@@ -1,5 +1,11 @@
 # Guía de desarrollo — Bodegix POS
 
+## Desarrollo del formato de respaldo
+
+Instala con `pnpm install --frozen-lockfile`. Si cambia el esquema Dexie, la exportación incluirá la
+tabla automáticamente, pero deben actualizarse compatibilidad, fixtures, diagnóstico y pruebas. No
+se habilita `acceptVersionDiff` sin agregar un plan explícito a `BACKUP_MIGRATION_PLANS`.
+
 ## Desarrollo de reporting
 
 Las fechas civiles se resuelven con `getBusinessDayRange` y la zona de `appSettings`; nunca con

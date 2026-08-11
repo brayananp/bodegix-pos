@@ -697,3 +697,98 @@ describe("Arquitectura — reporting diario", () => {
 		);
 	});
 });
+
+describe("Arquitectura — respaldo y restauración", () => {
+	const productionFiles = (directory: string) =>
+		collectFiles(directory).filter(
+			(file) => !file.endsWith(".test.ts") && !file.endsWith(".test.tsx"),
+		);
+	const backupRoot = join(SRC, "modules/backup");
+
+	it("mantiene model puro y application independiente de UI", () => {
+		const violations: string[] = [];
+		for (const file of productionFiles(join(backupRoot, "model"))) {
+			for (const moduleName of getImports(file)) {
+				if (
+					moduleName === "react" ||
+					moduleName === "dexie" ||
+					moduleName === "dexie-export-import"
+				) {
+					violations.push(`${relative(SRC, file)}: importa "${moduleName}"`);
+				}
+			}
+		}
+		for (const file of productionFiles(join(backupRoot, "application"))) {
+			for (const moduleName of getImports(file)) {
+				if (moduleName.includes("/ui")) violations.push(`${relative(SRC, file)}: importa UI`);
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("confina export/import Dexie a infraestructura", () => {
+		const violations = productionFiles(SRC)
+			.filter((file) => readFileSync(file, "utf-8").includes("dexie-export-import"))
+			.filter((file) => !file.includes(join("modules", "backup", "infrastructure")))
+			.map((file) => relative(SRC, file));
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("confina pickers, Web Crypto y tablas fuera de la UI", () => {
+		const violations: string[] = [];
+		for (const file of productionFiles(backupRoot)) {
+			const content = readFileSync(file, "utf-8");
+			if (
+				/show(?:Save|Open)FilePicker/.test(content) &&
+				!file.endsWith("browser-backup-file-gateway.ts")
+			) {
+				violations.push(`${relative(SRC, file)} usa picker`);
+			}
+			if (
+				/crypto\.subtle|subtle\.digest/.test(content) &&
+				!file.endsWith("browser-backup-crypto-gateway.ts")
+			) {
+				violations.push(`${relative(SRC, file)} usa Web Crypto`);
+			}
+			if (
+				file.includes(join("backup", "ui")) &&
+				/database\.(?:tables|products|sales|appSettings)/.test(content)
+			) {
+				violations.push(`${relative(SRC, file)} accede tablas`);
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("no usa red ni localStorage como lock", () => {
+		const violations: string[] = [];
+		for (const file of productionFiles(backupRoot)) {
+			const content = readFileSync(file, "utf-8");
+			if (/localStorage/.test(content)) violations.push(`${relative(SRC, file)} usa localStorage`);
+			if (/fetch\s*\(|XMLHttpRequest|WebSocket/.test(content)) {
+				violations.push(`${relative(SRC, file)} realiza red`);
+			}
+		}
+		expect(violations, `Violaciones:\n${violations.join("\n")}`).toHaveLength(0);
+	});
+
+	it("las escrituras operativas pasan por el coordinador y restore usa lock exclusivo", () => {
+		const writeAdapters = [
+			"modules/catalog/infrastructure/dexie-catalog-store.ts",
+			"modules/inventory/infrastructure/dexie-inventory-unit-of-work.ts",
+			"modules/cash/infrastructure/dexie-cash-unit-of-work.ts",
+			"modules/sales/infrastructure/dexie-complete-sale-unit-of-work.ts",
+			"modules/sales/infrastructure/dexie-void-sale-unit-of-work.ts",
+			"modules/sales/infrastructure/dexie-sale-draft-store.ts",
+		];
+		for (const path of writeAdapters) {
+			expect(readFileSync(join(SRC, path), "utf-8")).toContain("runWithDatabaseWriteAccess");
+		}
+		expect(
+			readFileSync(
+				join(backupRoot, "infrastructure/browser-backup-maintenance-gateway.ts"),
+				"utf-8",
+			),
+		).toContain("runWithExclusiveDatabaseMaintenance");
+	});
+});

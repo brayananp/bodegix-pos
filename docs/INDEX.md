@@ -77,6 +77,20 @@
 | [business-rules/sale-void-policy.md](./business-rules/sale-void-policy.md) | Política de anulación completa y sesión original |
 | [adr/0011-payments-inside-sales.md](./adr/0011-payments-inside-sales.md) | ADR: Pagos dentro del módulo sales, no separado |
 
+## 💾 Respaldo y restauración (Fase 8)
+
+| Documento | Descripción |
+|-----------|-------------|
+| [modules/backup.md](./modules/backup.md) | Límite, API pública y garantías del módulo |
+| [use-cases/create-backup.md](./use-cases/create-backup.md) | Creación y guardado de una copia completa |
+| [use-cases/restore-backup.md](./use-cases/restore-backup.md) | Validación temporal y restore replace-all |
+| [backup/backup-format-v1.md](./backup/backup-format-v1.md) | Contrato binario formal `.bodegix` |
+| [backup/backup-integrity.md](./backup/backup-integrity.md) | SHA-256, amenazas y límites |
+| [backup/backup-compatibility.md](./backup/backup-compatibility.md) | Versiones y registro de migraciones |
+| [backup/restore-safety.md](./backup/restore-safety.md) | Copia previa, transacción y recuperación |
+| [backup/cross-tab-maintenance.md](./backup/cross-tab-maintenance.md) | Web Locks y BroadcastChannel |
+| [ui/backup-restore-ui.md](./ui/backup-restore-ui.md) | Configuración, overlays y accesibilidad |
+
 ## 📐 Decisiones arquitectónicas (ADRs)
 
 | ADR | Título |
@@ -98,6 +112,7 @@
 | [0015](./adr/0015-react-testing-library.md) | React Testing Library para componentes |
 | [0016](./adr/0016-playwright-e2e.md) | Playwright para pruebas E2E |
 | [0017](./adr/0017-sale-draft-persistence.md) | **Persistencia del borrador de carrito — NUEVO** |
+| [0020](./adr/0020-portable-backup-and-safe-restore.md) | Respaldo portable y restauración segura |
 
 ## 📱 UI y formularios
 

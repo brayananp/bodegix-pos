@@ -1,5 +1,6 @@
 import { nowTimestamp } from "@/shared/kernel/dates";
 import { createId } from "@/shared/kernel/ids";
+import { runWithDatabaseWriteAccess } from "@/shared/infrastructure/database-maintenance";
 import type { BodegixDatabase } from "./bodegix-database";
 import { getLocalDatabase, isIndexedDbAvailable, openDatabase } from "./database-client";
 import { LocalDatabaseError, toLocalDatabaseError } from "./database-errors";
@@ -35,18 +36,20 @@ function createInitialSettings(): AppSettingsRecord {
 async function ensureAppSettings(
 	database: BodegixDatabase,
 ): Promise<{ settings: AppSettingsRecord; created: boolean }> {
-	return database.transaction("rw", database.appSettings, async () => {
-		const existing = await database.appSettings.get("main");
-		if (existing) {
-			const parsed = appSettingsRecordSchema.safeParse(existing);
-			if (!parsed.success) throw new LocalDatabaseError("APP_SETTINGS_INVALID", parsed.error);
-			return { settings: parsed.data, created: false };
-		}
+	return runWithDatabaseWriteAccess(() =>
+		database.transaction("rw", database.appSettings, async () => {
+			const existing = await database.appSettings.get("main");
+			if (existing) {
+				const parsed = appSettingsRecordSchema.safeParse(existing);
+				if (!parsed.success) throw new LocalDatabaseError("APP_SETTINGS_INVALID", parsed.error);
+				return { settings: parsed.data, created: false };
+			}
 
-		const settings = createInitialSettings();
-		await database.appSettings.add(settings);
-		return { settings, created: true };
-	});
+			const settings = createInitialSettings();
+			await database.appSettings.add(settings);
+			return { settings, created: true };
+		}),
+	);
 }
 
 export async function initializeLocalDatabase(

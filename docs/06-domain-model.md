@@ -1,5 +1,11 @@
 # 06. Modelo de dominio
 
+## Conceptos de respaldo
+
+`BackupManifest` describe formato, origen, aplicación, base, instalación, payload y tablas.
+`BackupValidationReport` separa errores bloqueantes de advertencias. `RestoreBackupResult` registra
+origen, conteos, identidad adoptada, copia previa y diagnóstico; no es una entidad persistente.
+
 ## Proyección DailyOperationalSummary
 
 Reporting no añade entidad. `DailyOperationalSummary` es una proyección efímera compuesta por

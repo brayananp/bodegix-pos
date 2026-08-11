@@ -1,5 +1,11 @@
 # 16. Definition of Done
 
+## Adición Fase 8
+
+Una entrega de portabilidad requiere formato documentado, hashes verificados, todas las tablas,
+compatibilidad explícita, temporal eliminada, copia previa, transacción, diagnóstico posterior,
+coordinación de escrituras, fallbacks de archivos y pruebas reales con `fake-indexeddb`.
+
 ## Fase 7
 
 Exige query read-only, fechas comerciales, métricas conciliables, varias sesiones, stock claramente

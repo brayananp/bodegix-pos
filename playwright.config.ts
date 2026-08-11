@@ -14,7 +14,7 @@ import { defineConfig, devices } from "@playwright/test";
  * En CI el job de E2E depende del job de check que ya hace build.
  */
 
-const E2E_PORT = 3001;
+const E2E_PORT = Number(process.env.E2E_PORT ?? 3001);
 const BASE_URL = `http://localhost:${E2E_PORT}`;
 
 export default defineConfig({

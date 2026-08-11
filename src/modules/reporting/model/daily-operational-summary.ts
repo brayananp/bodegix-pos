@@ -1,6 +1,7 @@
 export type DailyOperationalStatus = "no_activity" | "in_progress" | "ready_for_review";
 export type DailyChecklistStatus = "pass" | "warning" | "fail";
-export type DailyCloseAction = "cash" | "sale" | "diagnostics";
+export type DailyCloseAction = "cash" | "sale" | "diagnostics" | "backup";
+export type DailyBackupStatus = "never" | "up_to_date" | "due_soon" | "overdue";
 export type ReportingPaymentMethod = "cash" | "yape" | "plin" | "card" | "bank_transfer";
 
 export interface DailySalesSummary {
@@ -126,4 +127,5 @@ export interface DailyCloseChecklistInput {
 	readonly saleDraftItemCount: number;
 	readonly salesConsistent: boolean;
 	readonly paymentsConsistent: boolean;
+	readonly backupStatus: DailyBackupStatus;
 }

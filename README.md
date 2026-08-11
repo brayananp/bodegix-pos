@@ -1,11 +1,10 @@
 # Bodegix POS
 
-## Estado: Fase 7 ✅
+## Estado: Fase 8 ✅
 
-La Fase 7 incorpora `/summary` y el módulo `reporting`: una proyección diaria reactiva y de solo
-lectura con ventas, pagos, caja, inventario y checklist. `CashSession` continúa siendo el único
-cierre financiero; no existe tabla ni snapshot diario. El esquema actual es v7 y solo agrega índices
-para anulaciones por fecha.
+La Fase 8 incorpora respaldo completo `.bodegix`, integridad SHA-256, validación profunda en una
+base temporal y restauración replace-all con copia previa, transacción, recuperación automática y
+coordinación entre pestañas. El esquema permanece en v7: no se añade ninguna tabla de respaldo.
 
 El sistema de ventas está completo con historial y anulación de transacciones: búsqueda y filtrado de ventas históricas, detalle completo de ventas, y anulación compensatoria de ventas con reglas estrictas de sesión de caja.
 
@@ -80,7 +79,21 @@ Sistema de historial y anulación de ventas:
 - Interfaz responsive con Dialog (desktop) y Drawer (móvil)
 - 13 pruebas E2E completas
 
-**Siguiente fase:** Fase 8 — Respaldo, restauración y portabilidad de datos
+**Fase 7 — Resumen operativo diario** ✅
+
+Proyección reactiva de ventas, pagos, caja e inventario con checklist accionable y sin snapshots.
+
+**Fase 8 — Respaldo, restauración y portabilidad** ✅
+
+- Todas las tablas se exportan con `dexie-export-import`.
+- Contenedor binario v1 sin base64 ni ZIP, con SHA-256 de manifiesto y payload.
+- File System Access con fallback de descarga/archivo.
+- Validación temporal y diagnóstico antes de tocar la base actual.
+- Copia previa obligatoria, restore transaccional y recuperación automática.
+- Web Locks compartidos/exclusivos y coordinación por BroadcastChannel.
+- UI en Configuración, recordatorio y acción desde el resumen diario.
+
+**Siguiente fase:** Fase 9 — PWA, instalación, actualizaciones y endurecimiento offline
 
 ## Stack tecnológico
 
@@ -94,6 +107,7 @@ Sistema de historial y anulación de ventas:
 | Validación | **Zod** |
 | Formularios | **TanStack Form** |
 | Persistencia local | **Dexie 4.4.4** sobre **IndexedDB** |
+| Portabilidad | **dexie-export-import 4.4.0** + Web Crypto |
 | Tests unitarios | **Vitest** + **React Testing Library** |
 | Tests E2E | **Playwright** |
 | Linter/Formatter | **Biome** |

@@ -450,9 +450,19 @@ export function CloseChecklist({ checklist }: { checklist: DailyCloseChecklist }
 							{item.action === "diagnostics" && (
 								<Link
 									to="/settings"
+									search={{ section: "storage", panel: null }}
 									className="mt-2 inline-block text-xs font-medium text-primary underline"
 								>
 									Ejecutar diagnóstico
+								</Link>
+							)}
+							{item.action === "backup" && (
+								<Link
+									to="/settings"
+									search={{ section: "data", panel: "backup" }}
+									className="mt-2 inline-block text-xs font-medium text-primary underline"
+								>
+									Crear respaldo
 								</Link>
 							)}
 						</div>

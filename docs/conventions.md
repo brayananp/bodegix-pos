@@ -1,5 +1,11 @@
 # Convenciones de Bodegix POS
 
+## Convenciones de portabilidad
+
+Los errores públicos usan códigos `BACKUP_*`; timestamps son epoch milliseconds; hashes SHA-256
+hexadecimales minúsculos; nombres `.bodegix` usan slug limitado. No se serializa estado UI en la
+URL salvo `section` y `panel`, ni se construyen objetos operativos desde claves no validadas.
+
 ## Reporting
 
 Nombrar periodos con `endExclusive`; no usar “día cerrado” para un estado derivado. Diferenciar

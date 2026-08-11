@@ -1,5 +1,11 @@
 # 14. Estrategia de pruebas
 
+## Matriz Fase 8
+
+Unitarias: formato, integridad, Zod, migración, fecha y filename. Integración: export/import de todas
+las tablas, temporal, diagnóstico, replace-all, rollback/recuperación y `lastBackupAt`. Adaptadores:
+pickers/fallbacks. Concurrencia: shared/exclusive/ACK. UI/search/E2E cubren escritorio y móvil.
+
 ## Reporting (Fase 7)
 
 Las pruebas obligan intervalos semiabiertos, zona IANA, no N+1, fuentes correctas de métricas,

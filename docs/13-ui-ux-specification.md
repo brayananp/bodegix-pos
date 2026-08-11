@@ -1,5 +1,11 @@
 # 13. Especificación UI/UX
 
+## Configuración de datos
+
+Respaldo y restore viven en el tab “Datos y respaldos”, no en el sidebar. Crear usa Dialog/Drawer;
+restaurar usa un Sheet único, amplio y full-width móvil. El flujo muestra pasos, comparación,
+progreso y resultado, exige TanStack Form y bloquea cierre/navegación durante restore real.
+
 ## Resumen operativo (Fase 7)
 
 Página completa `/summary`, navegación diaria sin fechas futuras, cinco KPI y secciones General,

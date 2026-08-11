@@ -1,5 +1,11 @@
 # 07. Diseño de base de datos Dexie
 
+## Exportación/importación v7
+
+El esquema sigue en v7 con diez tablas; Fase 8 no agrega almacenamiento. `exportDB` recorre
+`database.tables`. La validación importa a una base temporal Bodegix y la elimina en `finally`; la
+base real usa `importInto` transaccional con `clearTablesBeforeImport`, nunca `db.delete()`.
+
 > Implementación vigente: esquema v7. V7 conserva v6 y agrega `sales.voidedAt` y
 > `sales.[status+voidedAt]` para reporting. No existe tabla de cierre o resumen diario.
 

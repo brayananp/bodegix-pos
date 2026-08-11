@@ -100,6 +100,24 @@ export function buildDailyCloseChecklist(input: DailyCloseChecklistInput): Daily
 				: "El total de pagos no coincide con el total vendido.",
 			action: input.paymentsConsistent ? null : "diagnostics",
 		},
+		{
+			id: "recent-backup",
+			status:
+				input.backupStatus === "overdue" || input.backupStatus === "never" ? "warning" : "pass",
+			title:
+				input.backupStatus === "never"
+					? "Aún no hay un respaldo manual"
+					: input.backupStatus === "overdue"
+						? "Respaldo atrasado"
+						: input.backupStatus === "due_soon"
+							? "Respaldo próximo"
+							: "Respaldo al día",
+			description:
+				input.backupStatus === "never" || input.backupStatus === "overdue"
+					? "Crea una copia portable antes de cerrar la jornada."
+					: "La copia manual más reciente está dentro del plazo configurado.",
+			action: input.backupStatus === "never" || input.backupStatus === "overdue" ? "backup" : null,
+		},
 	];
 	const status = items.some(({ status }) => status === "fail")
 		? "fail"

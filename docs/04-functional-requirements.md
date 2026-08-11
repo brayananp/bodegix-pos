@@ -1,5 +1,11 @@
 # 04. Requisitos funcionales
 
+## RF-08 — Respaldo y restauración
+
+El operador puede crear una copia completa, recibir recordatorios, inspeccionar un archivo sin
+modificar datos y restaurarlo tras guardar una copia previa y confirmar explícitamente. El sistema
+debe conservar IDs e identidad, reemplazar todo atómicamente y reportar el resultado verificable.
+
 ## RF-REP — Resumen operativo (implementado en Fase 7)
 
 `/summary` permite elegir una fecha no futura y consultar KPI, pagos, sesiones, flujo de caja,

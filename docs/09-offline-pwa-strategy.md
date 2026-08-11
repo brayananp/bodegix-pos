@@ -1,5 +1,11 @@
 # 09. Estrategia offline y PWA
 
+## Portabilidad completamente offline
+
+Crear, validar y restaurar no realiza solicitudes de red. File System Access es una mejora
+progresiva con fallback de descarga/input. Web Locks y BroadcastChannel coordinan pestañas; su
+degradación y límites están documentados. Cache/install/update pertenecen a Fase 9.
+
 ## Estado tras Fase 1
 
 IndexedDB ya es la fuente local y la base se abre exclusivamente después del montaje cliente. El

@@ -1,5 +1,6 @@
 import Dexie from "dexie";
 import type { BodegixDatabase } from "@/shared/infrastructure/local-db";
+import { runWithDatabaseWriteAccess } from "@/shared/infrastructure/database-maintenance";
 import { nowTimestamp } from "@/shared/kernel/dates";
 import { createId } from "@/shared/kernel/ids";
 import type {
@@ -43,65 +44,67 @@ export class DexieInventoryUnitOfWork implements InventoryUnitOfWork {
 
 	async applyStockMutation(intent: InventoryMutationIntent): Promise<InventoryMutationResult> {
 		try {
-			return await this.database.transaction(
-				"rw",
-				[this.database.products, this.database.inventoryMovements],
-				async () => {
-					const product = await this.database.products.get(intent.productId);
-					if (!product) throw new InventoryError("PRODUCT_NOT_FOUND");
-					const latestMovement = await this.database.inventoryMovements
-						.where("[productId+createdAt]")
-						.between([product.id, Dexie.minKey], [product.id, Dexie.maxKey])
-						.last();
+			return await runWithDatabaseWriteAccess(() =>
+				this.database.transaction(
+					"rw",
+					[this.database.products, this.database.inventoryMovements],
+					async () => {
+						const product = await this.database.products.get(intent.productId);
+						if (!product) throw new InventoryError("PRODUCT_NOT_FOUND");
+						const latestMovement = await this.database.inventoryMovements
+							.where("[productId+createdAt]")
+							.between([product.id, Dexie.minKey], [product.id, Dexie.maxKey])
+							.last();
 
-					if ((intent.kind === "initial" || intent.kind === "entry") && !product.isActive) {
-						throw new InventoryError("PRODUCT_INACTIVE_FOR_STOCK_ENTRY");
-					}
-					if (intent.kind === "initial") {
-						const previousMovements = await this.database.inventoryMovements
-							.where("productId")
-							.equals(product.id)
-							.count();
-						if (previousMovements > 0) {
-							throw new InventoryError("INITIAL_STOCK_ALREADY_REGISTERED");
+						if ((intent.kind === "initial" || intent.kind === "entry") && !product.isActive) {
+							throw new InventoryError("PRODUCT_INACTIVE_FOR_STOCK_ENTRY");
 						}
-						if (product.stockQuantity !== 0) {
-							throw new InventoryError("INITIAL_STOCK_REQUIRES_ZERO_STOCK");
+						if (intent.kind === "initial") {
+							const previousMovements = await this.database.inventoryMovements
+								.where("productId")
+								.equals(product.id)
+								.count();
+							if (previousMovements > 0) {
+								throw new InventoryError("INITIAL_STOCK_ALREADY_REGISTERED");
+							}
+							if (product.stockQuantity !== 0) {
+								throw new InventoryError("INITIAL_STOCK_REQUIRES_ZERO_STOCK");
+							}
 						}
-					}
 
-					const operation = this.toOperation(intent);
-					const transition = calculateInventoryTransition(product.stockQuantity, operation);
-					const timestamp = Math.max(
-						this.dependencies.now(),
-						(latestMovement?.createdAt ?? -1) + 1,
-					);
-					const movement = {
-						id: this.dependencies.createId(),
-						productId: product.id,
-						type: transition.movementType,
-						quantityDelta: transition.quantityDelta,
-						stockBefore: transition.stockBefore,
-						stockAfter: transition.stockAfter,
-						referenceType: intent.kind === "initial" ? ("setup" as const) : ("manual" as const),
-						referenceId:
-							intent.kind === "entry" ? optionalText(intent.reference, 80, "reference") : null,
-						reason: this.movementReason(intent),
-						createdAt: timestamp,
-					};
+						const operation = this.toOperation(intent);
+						const transition = calculateInventoryTransition(product.stockQuantity, operation);
+						const timestamp = Math.max(
+							this.dependencies.now(),
+							(latestMovement?.createdAt ?? -1) + 1,
+						);
+						const movement = {
+							id: this.dependencies.createId(),
+							productId: product.id,
+							type: transition.movementType,
+							quantityDelta: transition.quantityDelta,
+							stockBefore: transition.stockBefore,
+							stockAfter: transition.stockAfter,
+							referenceType: intent.kind === "initial" ? ("setup" as const) : ("manual" as const),
+							referenceId:
+								intent.kind === "entry" ? optionalText(intent.reference, 80, "reference") : null,
+							reason: this.movementReason(intent),
+							createdAt: timestamp,
+						};
 
-					await this.database.products.update(product.id, {
-						stockQuantity: transition.stockAfter,
-						updatedAt: timestamp,
-					});
-					await this.database.inventoryMovements.add(movement);
-					return {
-						productId: product.id,
-						stockQuantity: transition.stockAfter,
-						updatedAt: timestamp,
-						movement,
-					};
-				},
+						await this.database.products.update(product.id, {
+							stockQuantity: transition.stockAfter,
+							updatedAt: timestamp,
+						});
+						await this.database.inventoryMovements.add(movement);
+						return {
+							productId: product.id,
+							stockQuantity: transition.stockAfter,
+							updatedAt: timestamp,
+							movement,
+						};
+					},
+				),
 			);
 		} catch (error) {
 			if (isInventoryError(error)) throw error;

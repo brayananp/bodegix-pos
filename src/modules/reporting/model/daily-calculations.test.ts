@@ -61,12 +61,14 @@ describe("cálculos de reporting", () => {
 			saleDraftItemCount: 2,
 			salesConsistent: false,
 			paymentsConsistent: true,
+			backupStatus: "up_to_date",
 		});
 		expect(checklist.status).toBe("fail");
 		expect(checklist.items.map(({ status }) => status)).toEqual([
 			"warning",
 			"warning",
 			"fail",
+			"pass",
 			"pass",
 		]);
 	});

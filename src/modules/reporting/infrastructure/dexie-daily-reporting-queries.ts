@@ -9,6 +9,7 @@ import {
 	type SalePaymentRecord,
 	type SaleRecord,
 } from "@/shared/infrastructure/local-db";
+import { getBackupReminderStatus } from "@/modules/backup";
 import { getBusinessDayRange } from "@/shared/kernel/dates";
 import type { DailyReportingQueries, GetDailyOperationalSummaryInput } from "../application";
 import {
@@ -347,6 +348,12 @@ export class DexieDailyReportingQueries implements DailyReportingQueries {
 			saleDraftItemCount: draft?.items.length ?? 0,
 			salesConsistent,
 			paymentsConsistent: payments.totalCents === salesTotal,
+			backupStatus: getBackupReminderStatus({
+				lastBackupAt: settings.data.lastBackupAt,
+				backupReminderDays: settings.data.backupReminderDays,
+				now: Date.now(),
+				timezone: settings.data.timezone,
+			}),
 		});
 		const activeProducts = products.filter(({ isActive }) => isActive);
 		const inventory = buildInventory(

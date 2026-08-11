@@ -232,7 +232,10 @@ describe("DexieDailyReportingQueries", () => {
 			formattedSaleNumber: "V-000001",
 			paymentMethods: ["cash", "yape"],
 		});
-		expect(summary.closeChecklist.status).toBe("pass");
+		expect(summary.closeChecklist.status).toBe("warning");
+		expect(summary.closeChecklist.items).toContainEqual(
+			expect.objectContaining({ id: "recent-backup", status: "warning", action: "backup" }),
+		);
 	});
 
 	it("distingue ventas anuladas creadas de anulaciones procesadas", async () => {

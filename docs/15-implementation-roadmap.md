@@ -1,5 +1,11 @@
 # 15. Hoja de ruta de implementación
 
+## Estado Fase 8
+
+Completada: Bodegix Backup Format v1, exportación completa, SHA-256, guardado progresivo, validación
+temporal, restore seguro, recuperación, mantenimiento cross-tab, UI de configuración y recordatorio.
+Siguiente: **Fase 9 — PWA, instalación, actualizaciones y endurecimiento offline**.
+
 ## Fase 7 — completada
 
 Módulo `reporting`, esquema v7, `/summary`, proyección diaria reactiva, checklist y documentación
@@ -256,6 +262,6 @@ Tareas:
 
 ## Estado actualizado
 
-Fase 6 implementa historial y anulación completa con persistencia v6. La siguiente fase es
-**Fase 8 — Respaldo, restauración y portabilidad de datos**; devoluciones posteriores al cierre
-continúan fuera del MVP.
+Fase 8 implementa respaldo, restauración y portabilidad sin cambiar el esquema v7. La siguiente
+fase es **Fase 9 — PWA, instalación, actualizaciones y endurecimiento offline**; merge, nube y
+sincronización continúan fuera del MVP.

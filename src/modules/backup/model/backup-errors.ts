@@ -1,0 +1,45 @@
+export type BackupErrorCode =
+	| "BACKUP_EXPORT_FAILED"
+	| "BACKUP_SAVE_CANCELLED"
+	| "BACKUP_SAVE_FAILED"
+	| "BACKUP_FILE_TOO_LARGE"
+	| "BACKUP_FILE_INVALID"
+	| "BACKUP_MAGIC_INVALID"
+	| "BACKUP_MANIFEST_INVALID"
+	| "BACKUP_MANIFEST_TOO_LARGE"
+	| "BACKUP_MANIFEST_CHECKSUM_MISMATCH"
+	| "BACKUP_CHECKSUM_MISMATCH"
+	| "BACKUP_FILE_TRUNCATED"
+	| "BACKUP_FORMAT_UNSUPPORTED"
+	| "BACKUP_DATABASE_NAME_INVALID"
+	| "BACKUP_SCHEMA_INCOMPATIBLE"
+	| "BACKUP_SCHEMA_MIGRATION_UNAVAILABLE"
+	| "BACKUP_CREATED_BY_NEWER_APP"
+	| "BACKUP_TABLE_MISSING"
+	| "BACKUP_TABLE_UNEXPECTED"
+	| "BACKUP_TABLE_SCHEMA_MISMATCH"
+	| "BACKUP_ROW_COUNT_MISMATCH"
+	| "BACKUP_VALIDATION_FAILED"
+	| "BACKUP_SAFETY_COPY_REQUIRED"
+	| "BACKUP_MAINTENANCE_LOCK_FAILED"
+	| "BACKUP_OTHER_TABS_ACTIVE"
+	| "BACKUP_RESTORE_FAILED"
+	| "BACKUP_POST_RESTORE_VALIDATION_FAILED"
+	| "BACKUP_RECOVERY_FAILED"
+	| "BACKUP_CRYPTO_UNAVAILABLE";
+
+export class BackupError extends Error {
+	override readonly name = "BackupError";
+
+	constructor(
+		readonly code: BackupErrorCode,
+		override readonly cause?: unknown,
+		readonly details?: Record<string, unknown>,
+	) {
+		super(code);
+	}
+}
+
+export function isBackupError(error: unknown): error is BackupError {
+	return error instanceof BackupError;
+}

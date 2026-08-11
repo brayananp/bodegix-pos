@@ -46,7 +46,12 @@ async function completeSale(page: Page, mobile: boolean) {
 test("resumen vacío, fecha en URL y navegación sin futuro", async ({ page }) => {
 	await page.goto("/summary");
 	await expect(page.getByRole("heading", { name: "Resumen operativo" })).toBeVisible();
-	await expect(page.getByText("Sin actividad registrada")).toBeVisible();
+	await expect(page.getByText("Revisión pendiente")).toBeVisible();
+	await expect(page.getByText("Aún no hay un respaldo manual")).toBeVisible();
+	await expect(page.getByRole("link", { name: "Crear respaldo" })).toHaveAttribute(
+		"href",
+		"/settings?section=data&panel=backup",
+	);
 	await expect(page.getByRole("button", { name: "Día siguiente" })).toBeDisabled();
 	await page.getByRole("button", { name: "Día anterior" }).click();
 	await expect.poll(() => new URL(page.url()).searchParams.has("date")).toBe(true);

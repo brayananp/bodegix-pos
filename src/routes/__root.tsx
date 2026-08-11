@@ -1,5 +1,6 @@
 import { AppShell } from "@/app/layout/app-shell";
 import { LocalDatabaseProvider } from "@/app/providers/local-database-provider";
+import { DatabaseMaintenanceProvider } from "@/app/providers/database-maintenance-provider";
 import { Toaster } from "@/shared/components/ui/sonner";
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
@@ -42,8 +43,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				>
 					<TooltipProvider delay={500}>
 						<LocalDatabaseProvider>
-							{children}
-							<Toaster position="top-right" richColors closeButton />
+							<DatabaseMaintenanceProvider>
+								{children}
+								<Toaster position="top-right" richColors closeButton />
+							</DatabaseMaintenanceProvider>
 						</LocalDatabaseProvider>
 					</TooltipProvider>
 				</ThemeProvider>

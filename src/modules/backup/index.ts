@@ -13,3 +13,7 @@
 export const BACKUP_MODULE = "backup" as const;
 
 export type BackupModuleId = typeof BACKUP_MODULE;
+
+export { BackupSettingsPage } from "./ui/pages/backup-settings-page";
+export { settingsSearchSchema, type SettingsSearch } from "./ui/settings-search";
+export { getBackupReminderStatus, type BackupReminderStatus } from "./model";

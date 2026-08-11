@@ -1,5 +1,11 @@
 # 08. Arquitectura de la aplicación
 
+## Caso de uso de mantenimiento
+
+Commands coordinan puertos de base, criptografía, archivo y mantenimiento. Gateways concentran
+Dexie/Web APIs. La ruta `/settings` solo valida search params y monta UI; no exporta ni restaura. El
+diagnóstico existente se reutiliza antes y después de la importación.
+
 ## Consulta diaria
 
 `DailyReportingQueries` expresa una capacidad, no un repositorio CRUD. El adaptador Dexie agrupa
