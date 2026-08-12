@@ -10,7 +10,18 @@ const assetPaths = [
 	resolve(publicDirectory, "manifest.webmanifest"),
 ];
 
-let serverEntry = await readFile(serverEntryPath, "utf8");
+let serverEntry;
+try {
+	serverEntry = await readFile(serverEntryPath, "utf8");
+} catch (error) {
+	if (error?.code === "ENOENT") {
+		console.log(
+			"Sin entrada node-server de Nitro; no se requiere sincronización para la salida estática.",
+		);
+		process.exit(0);
+	}
+	throw error;
+}
 
 for (const assetPath of assetPaths) {
 	const contents = await readFile(assetPath);

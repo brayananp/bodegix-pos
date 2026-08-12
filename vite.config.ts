@@ -103,6 +103,7 @@ const config = defineConfig({
 			devOptions: { enabled: false },
 		}),
 		nitro({
+			preset: "node-server",
 			rollupConfig: { external: [/^@sentry\//] },
 			routeRules: { "/**": { headers: SECURITY_HEADERS } },
 		}),
