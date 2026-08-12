@@ -23,14 +23,29 @@ export function PwaUpdateBanner() {
 				Nueva versión disponible
 			</h2>
 			<p className="mt-1 text-sm text-muted-foreground">
-				Bodegix tiene una actualización preparada.
+				Bodegix tiene una actualización preparada
+				{pwa.availableRelease ? ` (${pwa.availableRelease.version})` : ""}.
 			</p>
+			{pwa.availableRelease?.databaseImpact === "forward_only" && (
+				<p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
+					Incluye cambios en almacenamiento local. Recomendamos crear respaldo antes de actualizar.
+				</p>
+			)}
 			{blocker && (
 				<p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
 					{BLOCKER_MESSAGES[blocker]}
 				</p>
 			)}
 			<div className="mt-4 flex flex-wrap justify-end gap-2">
+				{pwa.availableRelease?.databaseImpact === "forward_only" && (
+					<Button
+						type="button"
+						variant="outline"
+						onClick={() => window.location.assign("/settings?section=data&panel=backup")}
+					>
+						Crear respaldo
+					</Button>
+				)}
 				<Button type="button" variant="outline" onClick={pwa.postponeUpdate}>
 					Más tarde
 				</Button>

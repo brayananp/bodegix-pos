@@ -20,3 +20,10 @@ restore sintético antes de publicar. No desplegar como HTTP.
 
 Limitaciones: ver [known-limitations.md](known-limitations.md). Esta nota no anuncia disponibilidad
 general; deployment corresponde a Fase 11.
+
+## Deployment — Fase 11
+
+Target Vercel estático preparado mediante Build Output API v3. Artifact único se despliega como staged
+production y se promociona sin rebuild. Incluye metadata de build/release, rutas SPA limitadas, caché
+PWA, security headers, smoke no destructivo y operación rollback/forward-fix. Impacto DB actual:
+`none`; schema 7; backup v1. URL/dominio aún no configurados: estado `READY_FOR_DEPLOYMENT`.

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useConnectivityStatus } from "./connectivity/use-connectivity-status";
 import { useInstallPrompt } from "./install";
 import { PwaContext } from "./pwa-context";
-import type { PwaContextValue, PwaUpdateState } from "./pwa.types";
+import type { AvailableReleaseInfo, PwaContextValue, PwaUpdateState } from "./pwa.types";
 import { PwaOfflineReadyNotice } from "./components/pwa-offline-ready-notice";
 import { PwaUpdateBanner } from "./update/pwa-update-banner";
 import { getPwaUpdateSafety } from "./update/pwa-update-safety";
@@ -26,6 +26,7 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
 	);
 	const [registrationError, setRegistrationError] = useState(false);
 	const [updateState, setUpdateState] = useState<PwaUpdateState>("idle");
+	const [availableRelease, setAvailableRelease] = useState<AvailableReleaseInfo | null>(null);
 	const [updatePostponed, setUpdatePostponed] = useState(false);
 
 	const handleRegistered = useCallback(
@@ -86,8 +87,27 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
 		if (needRefresh) {
 			setUpdateState("available");
 			setUpdatePostponed(false);
+			void fetch("/release.json", { cache: "no-store" })
+				.then((response) => (response.ok ? response.json() : null))
+				.then((release: unknown) => {
+					if (!release || typeof release !== "object") return;
+					const candidate = release as Record<string, unknown>;
+					if (
+						typeof candidate.version === "string" &&
+						["none", "backward_compatible", "forward_only"].includes(
+							String(candidate.databaseImpact),
+						)
+					) {
+						setAvailableRelease({
+							version: candidate.version,
+							databaseImpact: candidate.databaseImpact as AvailableReleaseInfo["databaseImpact"],
+						});
+					}
+				})
+				.catch(() => undefined);
 		} else {
 			setUpdateState((current) => (current === "available" ? "idle" : current));
+			setAvailableRelease(null);
 		}
 	}, [needRefresh]);
 
@@ -169,6 +189,7 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
 			browserOnline: connectivity.browserOnline,
 			connectivityLabel: connectivity.label,
 			version: __APP_VERSION__,
+			build: __BUILD_METADATA__,
 			serviceWorker: {
 				registered,
 				controlling,
@@ -183,6 +204,7 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
 				installed: installation.installed,
 			},
 			updateState,
+			availableRelease,
 			updateSafety,
 			updatePostponed,
 			install: installation.install,
@@ -202,6 +224,7 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
 			registrationError,
 			installation,
 			updateState,
+			availableRelease,
 			updateSafety,
 			updatePostponed,
 			checkForUpdate,

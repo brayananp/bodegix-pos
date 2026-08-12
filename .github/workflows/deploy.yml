@@ -1,0 +1,97 @@
+name: Deploy Vercel
+
+on:
+  workflow_run:
+    workflows: [Release gate]
+    types: [completed]
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Release gate run ID
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  staging:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment: preview
+    outputs:
+      deployment_url: ${{ steps.deploy.outputs.url }}
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+
+      - name: Download tested artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vercel-build-output
+          path: .vercel/output
+          run-id: ${{ inputs.run_id || github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Deploy staged production artifact
+        id: deploy
+        shell: bash
+        run: |
+          url=$(pnpm dlx vercel@58.0.0 deploy --prebuilt --prod --skip-domain --archive=tgz --yes --token="$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Staging smoke
+        run: pnpm deploy:smoke
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+
+  production:
+    needs: staging
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+
+      - name: Require canonical production URL
+        shell: bash
+        run: |
+          if [ -z "$PRODUCTION_URL" ]; then
+            echo "Configure PRODUCTION_URL in GitHub Environment production." >&2
+            exit 1
+          fi
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+
+      - name: Promote same staged deployment
+        run: pnpm dlx vercel@58.0.0 promote "$DEPLOYMENT_URL" --yes --token="$VERCEL_TOKEN"
+        env:
+          DEPLOYMENT_URL: ${{ needs.staging.outputs.deployment_url }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Production smoke
+        run: pnpm deploy:smoke
+        env:
+          DEPLOY_URL: ${{ vars.PRODUCTION_URL }}

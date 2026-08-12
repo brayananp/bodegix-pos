@@ -1,7 +1,14 @@
 import path from "node:path";
 import { defineConfig } from "vitest/config";
+import { getBuildMetadata } from "./scripts/build-metadata.ts";
+
+const buildMetadata = getBuildMetadata();
 
 export default defineConfig({
+	define: {
+		__APP_VERSION__: JSON.stringify(buildMetadata.version),
+		__BUILD_METADATA__: JSON.stringify(buildMetadata),
+	},
 	test: {
 		globals: true,
 		environment: "jsdom",

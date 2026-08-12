@@ -9,6 +9,13 @@ export type PwaInstallState =
 
 export type PwaUpdateState = "idle" | "checking" | "available" | "applying" | "error";
 
+export type ReleaseDatabaseImpact = "none" | "backward_compatible" | "forward_only";
+
+export interface AvailableReleaseInfo {
+	readonly version: string;
+	readonly databaseImpact: ReleaseDatabaseImpact;
+}
+
 export type PwaUpdateBlocker =
 	| "dirty_form"
 	| "checkout_in_progress"
@@ -26,6 +33,7 @@ export interface PwaState {
 	readonly browserOnline: boolean;
 	readonly connectivityLabel: "online" | "offline";
 	readonly version: string;
+	readonly build: typeof __BUILD_METADATA__;
 	readonly serviceWorker: {
 		readonly registered: boolean;
 		readonly controlling: boolean;
@@ -40,6 +48,7 @@ export interface PwaState {
 		readonly installed: boolean;
 	};
 	readonly updateState: PwaUpdateState;
+	readonly availableRelease: AvailableReleaseInfo | null;
 	readonly updateSafety: PwaUpdateSafetyState;
 	readonly updatePostponed: boolean;
 }

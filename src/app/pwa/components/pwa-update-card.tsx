@@ -35,6 +35,12 @@ export function PwaUpdateCard() {
 						Actualización bloqueada mientras hay cambios u operaciones críticas activas.
 					</p>
 				)}
+				{pwa.availableRelease?.databaseImpact === "forward_only" && (
+					<p className="text-amber-700 dark:text-amber-300">
+						Versión {pwa.availableRelease.version} cambia almacenamiento local. Crea respaldo antes
+						de actualizar; después no es seguro volver al frontend anterior.
+					</p>
+				)}
 				<div className="flex flex-wrap gap-2">
 					<Button
 						type="button"

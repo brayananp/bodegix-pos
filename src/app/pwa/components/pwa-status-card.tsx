@@ -27,6 +27,11 @@ export function PwaStatusCard() {
 				<dl className="grid gap-3 text-sm sm:grid-cols-2">
 					<Status label="Producto" value="Bodegix POS" />
 					<Status label="Versión instalada" value={pwa.version} />
+					<Status label="Build" value={pwa.build.commitSha.slice(0, 7)} />
+					<Status
+						label="Compilado"
+						value={new Date(pwa.build.buildTimestamp).toLocaleString("es-PE")}
+					/>
 					<Status
 						label="Estado offline"
 						value={pwa.browserOnline ? "Con conexión" : "Sin conexión"}

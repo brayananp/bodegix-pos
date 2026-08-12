@@ -1,19 +1,19 @@
 import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
-
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
-
 import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { readFileSync } from "node:fs";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { getBuildMetadata } from "./scripts/build-metadata.ts";
 
 const packageJson = JSON.parse(
 	readFileSync(new URL("./package.json", import.meta.url), "utf8"),
 ) as {
 	version: string;
 };
+const buildMetadata = getBuildMetadata();
 
 const PWA_THEME_COLOR = "#16a34a";
 const PWA_BACKGROUND_COLOR = "#ffffff";
@@ -49,6 +49,7 @@ const config = defineConfig({
 	},
 	define: {
 		__APP_VERSION__: JSON.stringify(packageJson.version),
+		__BUILD_METADATA__: JSON.stringify(buildMetadata),
 	},
 	plugins: [
 		devtools({ removeDevtoolsOnBuild: true }),

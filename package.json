@@ -4,6 +4,10 @@
   "private": true,
   "description": "PWA offline-first de ventas, caja e inventario para bodegas.",
   "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": "24.14.1",
+    "pnpm": "11.20.0"
+  },
   "type": "module",
   "imports": {
     "#/*": "./src/*"
@@ -11,7 +15,7 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "generate-routes": "tsr generate",
-    "build": "vite build && node scripts/sync-pwa-nitro-assets.mjs",
+    "build": "vite build && node scripts/sync-pwa-nitro-assets.mjs && node scripts/prepare-vercel-output.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "biome lint .",
@@ -26,6 +30,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:build": "pnpm build && playwright test",
     "test:pwa": "pnpm build && playwright test --config=playwright.pwa.config.ts",
+    "test:pwa:built": "playwright test --config=playwright.pwa.config.ts",
     "test:pwa:headed": "pnpm build && playwright test --config=playwright.pwa.config.ts --headed",
     "test:a11y": "playwright test --config=playwright.a11y.config.ts",
     "test:smoke": "playwright test --config=playwright.release.config.ts",
@@ -33,7 +38,8 @@
     "security:audit": "pnpm audit --audit-level=high",
     "seed:demo:backup": "node scripts/create-demo-seed-backup.mjs",
     "release:artifacts": "node scripts/generate-release-artifacts.mjs",
-    "release:check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:performance && pnpm check:bundle && pnpm test:e2e && pnpm test:pwa && pnpm test:a11y && pnpm test:smoke && pnpm security:audit",
+    "deploy:smoke": "node scripts/deploy-smoke.mjs",
+    "release:check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:performance && pnpm check:bundle && pnpm test:e2e && pnpm test:pwa:built && pnpm test:a11y && pnpm test:smoke && pnpm security:audit",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "check:full": "pnpm check && pnpm test:e2e && pnpm test:pwa"
   },

@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main, master, develop]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   release-check:
     name: Hardening · Tests · Build · Browser matrix
@@ -37,16 +44,31 @@ jobs:
         run: pnpm release:check
 
       - name: Generate release supply-chain artifacts
-        if: ${{ !cancelled() }}
+        if: ${{ success() }}
         run: pnpm release:artifacts
+
+      - name: Package deployable bytes
+        if: ${{ success() }}
+        shell: bash
+        run: |
+          version=$(node -p "require('./package.json').version")
+          short_sha=${GITHUB_SHA::7}
+          source_date_epoch=$(git show -s --format=%ct "$GITHUB_SHA")
+          mkdir -p artifacts/deployment
+          tar --sort=name --mtime="@${source_date_epoch}" --owner=0 --group=0 --numeric-owner \
+            -czf "artifacts/deployment/bodegix-pos-${version}-${short_sha}.tar.gz" \
+            -C .vercel/output/static .
+          sha256sum "artifacts/deployment/bodegix-pos-${version}-${short_sha}.tar.gz" \
+            > "artifacts/deployment/bodegix-pos-${version}-${short_sha}.tar.gz.sha256"
 
       - name: Upload production build
         uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
+        if: ${{ success() }}
         with:
-          name: production-output
-          path: .output/
-          retention-days: 7
+          name: vercel-build-output
+          path: .vercel/output/
+          include-hidden-files: true
+          retention-days: 30
 
       - name: Upload release evidence
         uses: actions/upload-artifact@v4
@@ -55,6 +77,7 @@ jobs:
           name: release-evidence
           path: |
             artifacts/release/
+            artifacts/deployment/
             playwright-report/
             test-results/
           retention-days: 14

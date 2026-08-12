@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — Fase 11
+
+- Prepara hosting estático Vercel con Build Output API v3 y SPA fallback limitado.
+- Agrega artifact único, CI/CD staged production → aprobación → promoción sin rebuild.
+- Publica metadata de build/release y muestra versión/commit en Configuración.
+- Integra impacto DB en prompt PWA; documenta compatibilidad, rollback y forward-fix.
+- Configura caché por recurso, headers de seguridad y smoke HTTP no destructivo.
+
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),

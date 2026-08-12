@@ -14,6 +14,11 @@ function context(overrides: Partial<PwaContextValue> = {}): PwaContextValue {
 		browserOnline: true,
 		connectivityLabel: "online",
 		version: "1.2.3",
+		build: {
+			version: "1.2.3",
+			commitSha: "abcdef1234567890",
+			buildTimestamp: "2026-08-12T00:00:00.000Z",
+		},
 		serviceWorker: {
 			registered: true,
 			controlling: true,
@@ -28,6 +33,7 @@ function context(overrides: Partial<PwaContextValue> = {}): PwaContextValue {
 			installed: false,
 		},
 		updateState: "idle",
+		availableRelease: null,
 		updateSafety: { safeToReload: true, blockers: [] },
 		updatePostponed: false,
 		install: vi.fn().mockResolvedValue("unavailable"),

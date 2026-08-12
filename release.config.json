@@ -1,0 +1,5 @@
+{
+	"minimumCompatibleBackupVersion": 1,
+	"databaseImpact": "none",
+	"rollbackFrontendAllowed": true
+}

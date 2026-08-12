@@ -16,7 +16,7 @@ import {
 } from "../../model";
 
 export const BACKUP_APPLICATION_NAME = "Bodegix POS" as const;
-export const BACKUP_APPLICATION_VERSION = "0.1.0";
+export const BACKUP_APPLICATION_VERSION = __APP_VERSION__;
 
 export interface CreatedBackupArtifact {
 	readonly file: BackupFile;

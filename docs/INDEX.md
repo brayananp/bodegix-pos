@@ -230,3 +230,10 @@ Para preguntas, sugerencias o reportes de bugs:
 - [Pruebas](pwa/pwa-testing.md)
 - [ADR 0021](adr/0021-production-pwa-lifecycle.md)
 
+## Deployment y operación (Fase 11)
+
+- [Runbooks de deployment](deployment/architecture.md)
+- [Deployment Vercel](release/deployment-vercel.md)
+- [Matriz de compatibilidad](release/compatibility-matrix.md)
+- [Rollback e incidentes](release/rollback-and-incidents.md)
+

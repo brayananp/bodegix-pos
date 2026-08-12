@@ -92,7 +92,7 @@ export function BackupSettingsPage() {
 			<PageHeader
 				title="Configuración"
 				description="Administra la instalación, el almacenamiento y la portabilidad de tus datos"
-				badge={<Badge variant="secondary">Fase 9</Badge>}
+				badge={<Badge variant="secondary">Fase 11</Badge>}
 			/>
 			<div className="px-4 pb-8 md:px-6">
 				<Tabs

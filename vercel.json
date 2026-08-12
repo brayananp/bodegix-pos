@@ -1,0 +1,37 @@
+{
+	"$schema": "https://openapi.vercel.sh/vercel.json",
+	"framework": null,
+	"buildCommand": "pnpm build",
+	"outputDirectory": ".vercel/output/static",
+	"installCommand": "pnpm install --frozen-lockfile",
+	"rewrites": [
+		{ "source": "/", "destination": "/index.html" },
+		{ "source": "/sale", "destination": "/index.html" },
+		{ "source": "/products", "destination": "/index.html" },
+		{ "source": "/inventory", "destination": "/index.html" },
+		{ "source": "/cash", "destination": "/index.html" },
+		{ "source": "/sales", "destination": "/index.html" },
+		{ "source": "/summary", "destination": "/index.html" },
+		{ "source": "/settings", "destination": "/index.html" }
+	],
+	"headers": [
+		{
+			"source": "/(.*)",
+			"headers": [
+				{ "key": "Content-Security-Policy", "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self' blob:" },
+				{ "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+				{ "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
+				{ "key": "Referrer-Policy", "value": "no-referrer" },
+				{ "key": "X-Content-Type-Options", "value": "nosniff" },
+				{ "key": "X-Frame-Options", "value": "DENY" }
+			]
+		},
+		{ "source": "/assets/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] },
+		{ "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
+		{ "source": "/manifest.webmanifest", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }, { "key": "Content-Type", "value": "application/manifest+json" }] },
+		{ "source": "/release.json", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
+		{ "source": "/", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
+		{ "source": "/:path(sale|products|inventory|cash|sales|summary|settings)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
+		{ "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] }
+	]
+}
